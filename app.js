@@ -6,6 +6,15 @@
 const CLIENT_ID = "975272398511-aj3jsnp0bpm4e3eq3nr4mcdhb4q76ujm.apps.googleusercontent.com";
 const SCOPES = "https://www.googleapis.com/auth/drive.appdata";
 
+function getOAuthConfig() {
+    const origin = window.location.origin || 'http://localhost:8000';
+    const normalizedOrigin = origin.endsWith('/') ? origin : `${origin}/`;
+    return {
+        origin,
+        redirectUri: normalizedOrigin
+    };
+}
+
 let tokenClient = null;
 let accessToken = null;
 let driveFileId = null;
@@ -42,6 +51,8 @@ window.addEventListener('load', () => {
     setTimeout(() => {
         try {
             const isHttpOrigin = window.location.protocol === 'http:' || window.location.protocol === 'https:';
+            const oauthConfig = getOAuthConfig();
+
             if (!isHttpOrigin) {
                 if (loginBtn) {
                     loginBtn.textContent = '🔐 Open from http://localhost:8000 to connect Google';
@@ -52,14 +63,20 @@ window.addEventListener('load', () => {
                 return;
             }
 
+            if (loginBtn) {
+                loginBtn.textContent = `🔐 ΕΝΕΡΓΟΠΟΙΗΣΗ ΣΥΓΧΡΟΝΙΣΜΟΥ GOOGLE (${oauthConfig.origin})`;
+            }
+
             if (typeof google !== 'undefined' && google.accounts) {
                 tokenClient = google.accounts.oauth2.initTokenClient({
                     client_id: CLIENT_ID,
                     scope: SCOPES,
+                    ux_mode: 'popup',
+                    redirect_uri: oauthConfig.redirectUri,
                     callback: async (resp) => {
                         if (resp.error) {
                             console.error('Google auth error:', resp);
-                            alert('Google login failed. Check the OAuth app settings and the authorized JavaScript origins.');
+                            alert('Google login failed. Check the OAuth app settings and the authorized JavaScript origins/redirect URIs.');
                             return;
                         }
 
