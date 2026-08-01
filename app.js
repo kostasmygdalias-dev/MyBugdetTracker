@@ -39,17 +39,17 @@ function saveToLocalStorage() {
 
 // 🔐 ΑΣΦΑΛΗΣ ΑΡΧΙΚΟΠΟΙΗΣΗ GOOGLE SDK
 window.addEventListener('load', () => {
-    // Περιμένουμε 1 δευτερόλεπτο να φορτώσουν τα scripts της Google από την HTML
     setTimeout(() => {
         try {
-            if (typeof gapi !== 'undefined') {
-                gapi.load('client', async () => {
-                    await gapi.client.init({
-                        clientId: CLIENT_ID,
-                        scope: SCOPES,
-                        discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"]
-                    });
-                });
+            const isHttpOrigin = window.location.protocol === 'http:' || window.location.protocol === 'https:';
+            if (!isHttpOrigin) {
+                if (loginBtn) {
+                    loginBtn.textContent = '🔐 Open from http://localhost:8000 to connect Google';
+                    loginBtn.style.display = 'block';
+                    loginBtn.disabled = true;
+                }
+                console.warn('Google login requires an http/https origin. Current URL:', window.location.href);
+                return;
             }
 
             if (typeof google !== 'undefined' && google.accounts) {
@@ -57,38 +57,47 @@ window.addEventListener('load', () => {
                     client_id: CLIENT_ID,
                     scope: SCOPES,
                     callback: async (resp) => {
-                        if (resp.error) return;
+                        if (resp.error) {
+                            console.error('Google auth error:', resp);
+                            alert('Google login failed. Check the OAuth app settings and the authorized JavaScript origins.');
+                            return;
+                        }
+
                         accessToken = resp.access_token;
                         localStorage.setItem('drive_access_token', accessToken);
-                        if (loginBtn) loginBtn.style.display = "none"; // Κρύβουμε το κουμπί
+                        if (loginBtn) loginBtn.style.display = 'none';
                         await syncWithGoogleDrive();
                     },
                 });
             }
 
-            // Έλεγχος για Silent Login
             const savedToken = localStorage.getItem('drive_access_token');
             if (savedToken && typeof gapi !== 'undefined' && gapi.client) {
                 accessToken = savedToken;
                 gapi.client.setToken({ access_token: accessToken });
                 syncWithGoogleDrive();
-            } else {
-                if (loginBtn) loginBtn.style.display = "block"; // Εμφανίζουμε το κουμπί αν δεν είμαστε συνδεδεμένοι
+            } else if (loginBtn) {
+                loginBtn.style.display = 'block';
+                loginBtn.disabled = false;
             }
         } catch (e) {
-            console.log("Google Drive integration suspended or offline mode active.");
-            if (loginBtn) loginBtn.style.display = "block";
+            console.error('Google Drive integration failed:', e);
+            if (loginBtn) loginBtn.style.display = 'block';
         }
     }, 1000);
 });
 
-// Όταν ο χρήστης πατάει το κουμπί
 if (loginBtn) {
     loginBtn.addEventListener('click', () => {
+        if (window.location.protocol === 'file:') {
+            alert('Open the app from http://localhost:8000 or your deployed website URL first.');
+            return;
+        }
+
         if (tokenClient) {
-            tokenClient.requestAccessToken();
+            tokenClient.requestAccessToken({ prompt: 'consent' });
         } else {
-            alert("⚠️ Το Google SDK δεν έχει φορτώσει ακόμα. Δοκίμασε ξανά σε 2 δευτερόλεπτα.");
+            alert('Google SDK is not ready yet. Please refresh the page and try again.');
         }
     });
 }
@@ -164,42 +173,48 @@ async function syncWithGoogleDrive() {
     }
 }
 
-// Προσθήκη Πάγιας Εντολής
-addRecurringBtn.addEventListener('click', async () => {
-    const name = recurName.value;
-    const amount = Number(recurAmount.value);
-    const type = recurType.value;
-    if (name === "" || amount <= 0) return alert("Συμπληρώστε σωστά τα στοιχεία!");
+function attachUiEvents() {
+    if (addRecurringBtn) {
+        addRecurringBtn.addEventListener('click', async () => {
+            const name = recurName.value;
+            const amount = Number(recurAmount.value);
+            const type = recurType.value;
+            if (name === "" || amount <= 0) return alert("Συμπληρώστε σωστά τα στοιχεία!");
 
-    recurringTemplates.push({ id: Date.now(), name, amount, type });
-    saveToLocalStorage();
-    recurName.value = "";
-    recurAmount.value = "";
-    updateDashboard();
-    await syncWithGoogleDrive();
-});
+            recurringTemplates.push({ id: Date.now(), name, amount, type });
+            saveToLocalStorage();
+            recurName.value = "";
+            recurAmount.value = "";
+            updateDashboard();
+            await syncWithGoogleDrive();
+        });
+    }
 
-// Προσθήκη Συναλλαγής
-addTransactionBtn.addEventListener('click', async () => {
-    const name = transName.value;
-    const amount = Number(transAmount.value);
-    const monthYearValue = transMonthYear.value;
-    const typeValue = transType.value;
-    if (name === "" || amount <= 0 || monthYearValue === "") return alert("Συμπληρώστε όλα τα στοιχεία!");
+    if (addTransactionBtn) {
+        addTransactionBtn.addEventListener('click', async () => {
+            const name = transName.value;
+            const amount = Number(transAmount.value);
+            const monthYearValue = transMonthYear.value;
+            const typeValue = transType.value;
+            if (name === "" || amount <= 0 || monthYearValue === "") return alert("Συμπληρώστε όλα τα στοιχεία!");
 
-    const [yearPart, monthPart] = monthYearValue.split('-');
-    const parsedMonthIndex = (parseInt(monthPart) - 1).toString();
+            const [yearPart, monthPart] = monthYearValue.split('-');
+            const parsedMonthIndex = (parseInt(monthPart) - 1).toString();
 
-    transactions.push({ id: Date.now(), name, amount, year: yearPart, month: parsedMonthIndex, type: typeValue });
-    saveToLocalStorage();
-    transName.value = "";
-    transAmount.value = "";
-    updateDashboard();
-    await syncWithGoogleDrive();
-});
+            transactions.push({ id: Date.now(), name, amount, year: yearPart, month: parsedMonthIndex, type: typeValue });
+            saveToLocalStorage();
+            transName.value = "";
+            transAmount.value = "";
+            updateDashboard();
+            await syncWithGoogleDrive();
+        });
+    }
 
-viewYear.addEventListener('change', updateDashboard);
-viewMonth.addEventListener('change', updateDashboard);
+    if (viewYear) viewYear.addEventListener('change', updateDashboard);
+    if (viewMonth) viewMonth.addEventListener('change', updateDashboard);
+}
+
+attachUiEvents();
 
 window.deleteRecurring = async function(id) {
     if(confirm("Κατάργηση αυτής της πάγιας εντολής;")) {
