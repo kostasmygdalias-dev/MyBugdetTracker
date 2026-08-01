@@ -1,12 +1,17 @@
-// ==========================================
-// ΜΕΡΟΣ 1: ΤΟΠΙΚΗ ΔΙΑΧΕΙΡΙΣΗ & ΣΥΓΧΡΟΝΙΣΜΟΣ CLOUD
-// ==========================================
 
-const SUPABASE_URL = "https://uyapnscadjnsdivmxeqt.supabase.co";
+const SUPABASE_URL = "https://supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YXBuc2NhZGpuc2Rpdm14ZXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2MDI0MzksImV4cCI6MjEwMTE3ODQzOX0.idM0d0LaAnYOhoOWurNRGh_G7rRR1EZBsmPHnzTpLJE";
 
-// ✨ Η ΜΕΓΑΛΗ ΔΙΟΡΘΩΣΗ: Χρήση του σωστού αντικειμένου χωρίς να μπερδεύεται η JavaScript
-const supabaseCloud = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let supabaseCloud = null;
+
+// ✨ Η ΜΕΓΑΛΗ ΔΙΟΡΘΩΣΗ: Σωστή σύνδεση με το cdnjs της HTML για να μην κρασάρει η JavaScript
+try {
+    if (typeof window.supabase !== 'undefined') {
+        supabaseCloud = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
+} catch (e) {
+    console.log("Supabase library blocked by network. Running in local-only safety mode.");
+}
 
 // Τα δεδομένα τρέχουν ΑΚΑΡΙΑΙΑ από την τοπική μνήμη της συσκευής
 let transactions = JSON.parse(localStorage.getItem('quantum_ledger')) || [];
@@ -39,11 +44,14 @@ function saveToLocalStorage() {
 
 // Λειτουργία Συγχρονισμού με το Cloud
 syncBtn.addEventListener('click', async () => {
+    if (!supabaseCloud) {
+        return alert("❌ Δεν υπάρχει σύνδεση με το Cloud αυτή τη στιγμή (Η βιβλιοθήκη Supabase είναι μπλοκαρισμένη από το δίκτυο).");
+    }
+
     syncBtn.textContent = "⏳ ΣΥΓΧΡΟΝΙΣΜΟΣ...";
     syncBtn.style.opacity = "0.6";
 
     try {
-        // 1. Καθαρίζουμε τον πίνακα στο Cloud και ανεβάζουμε τα τρέχοντα τοπικά δεδομένα σου
         await supabaseCloud.from('quantum_ledger').delete().neq('id', 0);
         if (transactions.length > 0) {
             const cleanTransactions = transactions.filter(t => !t.isAuto).map(t => ({
@@ -52,14 +60,12 @@ syncBtn.addEventListener('click', async () => {
             await supabaseCloud.from('quantum_ledger').insert(cleanTransactions);
         }
 
-        // 2. Το ίδιο και για τις πάγιες εντολές
         await supabaseCloud.from('quantum_recurring').delete().neq('id', 0);
         if (recurringTemplates.length > 0) {
             const cleanRecur = recurringTemplates.map(r => ({ name: r.name, amount: r.amount, type: r.type }));
             await supabaseCloud.from('quantum_recurring').insert(cleanRecur);
         }
 
-        // 3. Ξανακατεβάζουμε τα πάντα για επιβεβαίωση
         const [ledgerRes, recurRes] = await Promise.all([
             supabaseCloud.from('quantum_ledger').select('*'),
             supabaseCloud.from('quantum_recurring').select('*')
@@ -70,9 +76,9 @@ syncBtn.addEventListener('click', async () => {
 
         saveToLocalStorage();
         updateDashboard();
-        alert("✅ Ο συγχρονισμός ολοκληρώθηκε! Τα δεδομένα σου είναι ασφαλή στο Cloud.");
+        alert("✅ Ο συγχρονισμός ολοκληρώθηκε με επιτυχία!");
     } catch (e) {
-        alert("❌ Αποτυχία σύνδεσης. Δοκίμασε ξανά σε λίγο.");
+        alert("❌ Σφάλμα δικτύου κατά το συγχρονισμό.");
     }
 
     syncBtn.textContent = "☁️ ΣΥΓΧΡΟΝΙΣΜΟΣ ΜΕ CLOUD";
