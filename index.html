@@ -1,20 +1,19 @@
 <!DOCTYPE html>
 <html lang="el">
 <head>
-    <script src="https://jsdelivr.net"></script>
-
     <meta charset="UTF-8">
-    <!-- ΑΥΤΗ Η ΓΡΑΜΜΗ ΦΕΡΝΕΙ ΤΗΝ ΕΦΑΡΜΟΓΗ ΚΟΝΤΑ ΣΤΟ ΚΙΝΗΤΟ -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quantum Ledger AI - 2100</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://jsdelivr.net"></script>
 </head>
-...
-
 <body>
 
     <div class="container">
         <h1>Quantum Ledger AI</h1>
+        
+        <!-- ΚΟΥΜΠΙ ΥΒΡΙΔΙΚΟΥ ΣΥΓΧΡΟΝΙΣΜΟΥ -->
+        <button id="syncBtn" style="background: linear-gradient(45deg, #00ffff, #00ff88); color:#000; margin-bottom:15px; padding:10px;">☁️ ΣΥΓΧΡΟΝΙΣΜΟΣ ΜΕ CLOUD</button>
         
         <!-- ΚΕΝΤΡΙΚΟ DASHBOARD -->
         <div class="dashboard-panel">
@@ -66,7 +65,6 @@
         <div class="section recurring-panel">
             <h3>🤖 Αυτοματοποιημένα Πάγια (Subscriptions)</h3>
             
-            <!-- Έτοιμα Quick Tags για Πάγια -->
             <div class="quick-tags-container">
                 <div class="tag-group">
                     <span class="group-label">⚙️ ΔΗΜΟΦΙΛΗ ΠΑΓΙΑ:</span>
@@ -74,14 +72,12 @@
                     <button class="recur-tag-btn" data-name="Κοινόχρηστα" data-category="expense-bills">🏢 Κοινόχρηστα</button>
                     <button class="recur-tag-btn" data-name="Συνδρομές (Netflix/Spotify)" data-category="expense-other">📺 Συνδρομές</button>
                     <button class="recur-tag-btn" data-name="Γυμναστήριο" data-category="expense-fun">🏋️ Γυμναστήριο</button>
-                    <button class="recur-tag-btn" data-name="Δάνειο / Δόση" data-category="expense-bills">💳 Δόση Δανείου</button>
-                    <button class="recur-tag-btn" data-name="Ασφάλεια" data-category="expense-other">🛡️ Ασφάλεια</button>
                     <button class="recur-tag-btn" data-name="Μισθός (Πάγιο)" data-category="income">💰 Μισθός</button>
                 </div>
             </div>
 
             <div class="recurring-inputs">
-                <input type="text" id="recurName" placeholder="Όνομα παγίου ή επιλογή tag">
+                <input type="text" id="recurName" placeholder="Όνομα παγίου">
                 <input type="number" id="recurAmount" placeholder="Ποσό (€)">
                 <select id="recurType">
                     <option value="expense-bills">🏠 Πάγιο Έξοδο</option>
