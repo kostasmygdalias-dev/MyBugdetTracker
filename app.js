@@ -4,7 +4,7 @@
 
 // Το δικό σου σωστό Google Client ID
 const CLIENT_ID = "975272398511-aj3jsnp0bpm4e3eq3nr4mcdhb4q76ujm.apps.googleusercontent.com";
-const SCOPES = "https://googleapis.com";
+const SCOPES = "https://www.googleapis.com/auth/drive.appdata";
 
 let tokenClient = null;
 let accessToken = null;
@@ -44,7 +44,11 @@ window.addEventListener('load', () => {
         try {
             if (typeof gapi !== 'undefined') {
                 gapi.load('client', async () => {
-                    await gapi.client.init({ discoveryDocs: ["https://googleapis.com"] });
+                    await gapi.client.init({
+                        clientId: CLIENT_ID,
+                        scope: SCOPES,
+                        discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"]
+                    });
                 });
             }
 
