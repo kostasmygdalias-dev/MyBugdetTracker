@@ -3,18 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quantum Ledger AI - 2100</title>
+    <title>Budget Tracker - 2100</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div class="container">
-        <h1>Quantum Ledger AI</h1>
-        <!-- ΚΟΥΜΠΙ ΕΝΕΡΓΟΠΟΙΗΣΗΣ ΣΥΝΔΕΣΗΣ GOOGLE -->
-<button id="loginBtn" style="background: linear-gradient(45deg, #4285F4, #34A853); color:#fff; margin-bottom:15px; padding:12px; width:100%; border:none; border-radius:10px; font-weight:bold; cursor:pointer; display:none;">🔐 ΕΝΕΡΓΟΠΟΙΗΣΗ ΣΥΓΧΡΟΝΙΣΜΟΥ GOOGLE</button>
-
-        
-        <!-- ΚΕΝΤΡΙΚΟ DASHBOARD -->
+        <h1>Budget Tracker</h1>
+            <!-- ΚΕΝΤΡΙΚΟ DASHBOARD -->
         <div class="dashboard-panel">
             <div class="time-filter">
                 <label for="viewYear">🧬 Έτος: </label>
@@ -62,14 +58,20 @@
 
         <!-- ΠΑΝΕΛ ΠΑΓΙΩΝ -->
         <div class="section recurring-panel">
-            <h3>🤖 Αυτοματοποιημένα Πάγια</h3>
+            <h3>Παγιά Εξοδα</h3>
             
             <div class="quick-tags-container">
                 <div class="tag-group">
                     <button class="recur-tag-btn" data-name="Ενοίκιο" data-category="expense-bills">🏠 Ενοίκιο</button>
-                    <button class="recur-tag-btn" data-name="Κοινόχρηστα" data-category="expense-bills">🏢 Κοινόχρηστα</button>
-                    <button class="recur-tag-btn" data-name="Συνδρομές" data-category="expense-other">📺 Συνδρομές</button>
+                    <button class="recur-tag-btn" data-name="Super Market" data-category="expense-food">🛒 Super Market</button>
+                    <button class="recur-tag-btn" data-name="Καφές" data-category="expense-food">☕ Καφές</button>
+                    <button class="recur-tag-btn" data-name="Delivery" data-category="expense-food">🍔 Delivery</button>
+                    <button class="recur-tag-btn" data-name="Βενζίνη" data-category="expense-other">🚗 Μετακίνηση</button>
+                    <button class="recur-tag-btn" data-name="Φάρμακα" data-category="expense-other">💊 Φάρμακα</button>
+                    <button class="recur-tag-btn" data-name="Netflix" data-category="expense-other">📺 Netflix</button>
                     <button class="recur-tag-btn" data-name="Μισθός (Πάγιο)" data-category="income">💰 Μισθός</button>
+                    <button class="recur-tag-btn" data-name="Bonus" data-category="income">🎁 Bonus</button>
+                    <button class="recur-tag-btn" data-name="Αποδοχές Freelance" data-category="income">💻 Freelance</button>
                 </div>
             </div>
 
@@ -87,15 +89,20 @@
 
         <!-- ΦΟΡΜΑ ΚΑΤΑΓΡΑΦΗΣ -->
         <div class="section record-panel">
-            <h3>Κβαντική Καταγραφή</h3>
+            <h3>Καταγραφή Συναλλαγής</h3>
             
             <div class="quick-tags-container">
                 <div class="tag-group">
                     <button class="tag-btn" data-name="Μισθός" data-category="income">💰 Μισθός</button>
+                    <button class="tag-btn" data-name="Bonus" data-category="income">🎁 Bonus</button>
+                    <button class="tag-btn" data-name="Αποδοχές Freelance" data-category="income">💻 Freelance</button>
                     <button class="tag-btn" data-name="Super Market" data-category="expense-food">🛒 Super Market</button>
                     <button class="tag-btn" data-name="Καφές" data-category="expense-food">☕ Καφές</button>
                     <button class="tag-btn" data-name="Delivery" data-category="expense-food">🍔 Delivery</button>
                     <button class="tag-btn" data-name="Βενζίνη" data-category="expense-other">🚗 Μετακίνηση</button>
+                    <button class="tag-btn" data-name="Φάρμακα" data-category="expense-other">💊 Φάρμακα</button>
+                    <button class="tag-btn" data-name="Ενοίκιο" data-category="expense-bills">🏠 Ενοίκιο</button>
+                    <button class="tag-btn" data-name="Netflix" data-category="expense-other">📺 Netflix</button>
                 </div>
             </div>
 
@@ -118,12 +125,10 @@
             <button id="addTransactionBtn">⚡ ΕΚΤΕΛΕΣΗ ΣΥΝΑΛΛΑΓΗΣ</button>
         </div>
 
-        <h3>Ιστορικό Τροχιάς:</h3>
+        <h3>Ιστορικό</h3>
         <ul id="transactionList"></ul>
     </div>
 
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="https://apis.google.com/js/api.js" async defer></script>
     <script src="app.js"></script>
 </body>
 </html>

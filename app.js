@@ -1,27 +1,18 @@
 // ==========================================
-// ΜΕΡΟΣ 1: ΔΕΔΟΜΕΝΑ & GOOGLE DRIVE API AUTH
+// ΜΕΡΟΣ 1: ΔΕΔΟΜΕΝΑ
 // ==========================================
 
-// Το δικό σου σωστό Google Client ID
-const CLIENT_ID = "975272398511-aj3jsnp0bpm4e3eq3nr4mcdhb4q76ujm.apps.googleusercontent.com";
-const SCOPES = "https://www.googleapis.com/auth/drive.appdata";
-
-function getOAuthConfig() {
-    const origin = window.location.origin || 'http://localhost:8000';
-    const normalizedOrigin = origin.endsWith('/') ? origin : `${origin}/`;
-    return {
-        origin,
-        redirectUri: normalizedOrigin
-    };
-}
-
-let tokenClient = null;
 let accessToken = null;
-let driveFileId = null;
+
+const now = new Date();
 
 // Τα δεδομένα τρέχουν ακαριαία (0ms) τοπικά από το LocalStorage
 let transactions = JSON.parse(localStorage.getItem('quantum_ledger')) || [];
-let recurringTemplates = JSON.parse(localStorage.getItem('quantum_recurring')) || [];
+let recurringTemplates = (JSON.parse(localStorage.getItem('quantum_recurring')) || []).map(recur => ({
+    ...recur,
+    startYear: recur.startYear ?? String(now.getFullYear()),
+    startMonth: recur.startMonth ?? String(now.getMonth())
+}));
 
 const transName = document.getElementById('transName');
 const transAmount = document.getElementById('transAmount');
@@ -36,158 +27,19 @@ const addRecurringBtn = document.getElementById('addRecurringBtn');
 const recurringList = document.getElementById('recurringList');
 const viewYear = document.getElementById('viewYear');
 const viewMonth = document.getElementById('viewMonth');
-const loginBtn = document.getElementById('loginBtn');
 
-const now = new Date();
 transMonthYear.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+if (viewYear) viewYear.value = String(now.getFullYear());
+if (viewMonth) viewMonth.value = String(now.getMonth());
 
 function saveToLocalStorage() {
     localStorage.setItem('quantum_ledger', JSON.stringify(transactions));
     localStorage.setItem('quantum_recurring', JSON.stringify(recurringTemplates));
 }
 
-// 🔐 ΑΣΦΑΛΗΣ ΑΡΧΙΚΟΠΟΙΗΣΗ GOOGLE SDK
-window.addEventListener('load', () => {
-    setTimeout(() => {
-        try {
-            const isHttpOrigin = window.location.protocol === 'http:' || window.location.protocol === 'https:';
-            const oauthConfig = getOAuthConfig();
-
-            if (!isHttpOrigin) {
-                if (loginBtn) {
-                    loginBtn.textContent = '🔐 Open from http://localhost:8000 to connect Google';
-                    loginBtn.style.display = 'block';
-                    loginBtn.disabled = true;
-                }
-                console.warn('Google login requires an http/https origin. Current URL:', window.location.href);
-                return;
-            }
-
-            if (loginBtn) {
-                loginBtn.textContent = `🔐 ΕΝΕΡΓΟΠΟΙΗΣΗ ΣΥΓΧΡΟΝΙΣΜΟΥ GOOGLE (${oauthConfig.origin})`;
-            }
-
-            if (typeof google !== 'undefined' && google.accounts) {
-                tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: CLIENT_ID,
-                    scope: SCOPES,
-                    ux_mode: 'popup',
-                    redirect_uri: oauthConfig.redirectUri,
-                    callback: async (resp) => {
-                        if (resp.error) {
-                            console.error('Google auth error:', resp);
-                            alert('Google login failed. Check the OAuth app settings and the authorized JavaScript origins/redirect URIs.');
-                            return;
-                        }
-
-                        accessToken = resp.access_token;
-                        localStorage.setItem('drive_access_token', accessToken);
-                        if (loginBtn) loginBtn.style.display = 'none';
-                        await syncWithGoogleDrive();
-                    },
-                });
-            }
-
-            const savedToken = localStorage.getItem('drive_access_token');
-            if (savedToken && typeof gapi !== 'undefined' && gapi.client) {
-                accessToken = savedToken;
-                gapi.client.setToken({ access_token: accessToken });
-                syncWithGoogleDrive();
-            } else if (loginBtn) {
-                loginBtn.style.display = 'block';
-                loginBtn.disabled = false;
-            }
-        } catch (e) {
-            console.error('Google Drive integration failed:', e);
-            if (loginBtn) loginBtn.style.display = 'block';
-        }
-    }, 1000);
-});
-
-if (loginBtn) {
-    loginBtn.addEventListener('click', () => {
-        if (window.location.protocol === 'file:') {
-            alert('Open the app from http://localhost:8000 or your deployed website URL first.');
-            return;
-        }
-
-        if (tokenClient) {
-            tokenClient.requestAccessToken({ prompt: 'consent' });
-        } else {
-            alert('Google SDK is not ready yet. Please refresh the page and try again.');
-        }
-    });
-}
-
-// ☁️ ΜΗΧΑΝΙΣΜΟΣ ΣΥΓΧΡΟΝΙΣΜΟΥ
+// Το Google Drive sync παραμένει απενεργοποιημένο για να μην εξαρτάται από Google Cloud.
 async function syncWithGoogleDrive() {
-    if (!accessToken || typeof gapi === 'undefined' || !gapi.client) return;
-    try {
-        let res = await gapi.client.drive.files.list({
-            q: "name='quantum_budget_data.json'",
-            spaces: 'appDataFolder',
-            fields: 'files(id)'
-        });
-        
-        let files = res.result.files;
-        let cloudData = null;
-
-        if (files && files.length > 0) {
-            driveFileId = files[0].id; // Σωστό: files[0].id
-            let fileContent = await gapi.client.drive.files.get({
-                fileId: driveFileId,
-                alt: 'media'
-            });
-            cloudData = fileContent.result;
-        }
-
-        if (cloudData) {
-            if (transactions.length === 0 && cloudData.transactions) transactions = cloudData.transactions;
-            if (recurringTemplates.length === 0 && cloudData.recurring) recurringTemplates = cloudData.recurring;
-        }
-
-        const boundary = 'foo_bar_baz';
-        const delimiter = "\r\n--" + boundary + "\r\n";
-        const close_delim = "\r\n--" + boundary + "--";
-        
-        const metadata = {
-            'name': 'quantum_budget_data.json',
-            'parents': ['appDataFolder']
-        };
-        const data = { transactions, recurring: recurringTemplates };
-
-        const multipartRequestBody =
-            delimiter + 'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-            JSON.stringify(metadata) + delimiter +
-            'Content-Type: application/json\r\n\r\n' +
-            JSON.stringify(data) + close_delim;
-
-        if (driveFileId) {
-            await gapi.client.request({
-                'path': '/upload/drive/v3/files/' + driveFileId,
-                'method': 'PATCH',
-                'params': {'uploadType': 'multipart'},
-                'headers': {'Content-Type': 'multipart/related; boundary="' + boundary + '"'},
-                'body': multipartRequestBody
-            });
-        } else {
-            let createRes = await gapi.client.request({
-                'path': '/upload/drive/v3/files',
-                'method': 'POST',
-                'params': {'uploadType': 'multipart'},
-                'headers': {'Content-Type': 'multipart/related; boundary="' + boundary + '"'},
-                'body': multipartRequestBody
-            });
-            driveFileId = createRes.result.id;
-        }
-
-        saveToLocalStorage();
-        updateDashboard();
-    } catch (e) {
-        if(e.status === 401 && tokenClient) {
-            tokenClient.requestAccessToken({ prompt: 'none' });
-        }
-    }
+    return;
 }
 
 function attachUiEvents() {
@@ -198,12 +50,14 @@ function attachUiEvents() {
             const type = recurType.value;
             if (name === "" || amount <= 0) return alert("Συμπληρώστε σωστά τα στοιχεία!");
 
-            recurringTemplates.push({ id: Date.now(), name, amount, type });
+            const startYear = viewYear?.value || String(now.getFullYear());
+        const startMonth = viewMonth?.value === 'all' ? String(now.getMonth()) : viewMonth?.value || String(now.getMonth());
+
+        recurringTemplates.push({ id: Date.now(), name, amount, type, startYear, startMonth });
             saveToLocalStorage();
             recurName.value = "";
             recurAmount.value = "";
             updateDashboard();
-            await syncWithGoogleDrive();
         });
     }
 
@@ -223,7 +77,6 @@ function attachUiEvents() {
             transName.value = "";
             transAmount.value = "";
             updateDashboard();
-            await syncWithGoogleDrive();
         });
     }
 
@@ -238,7 +91,6 @@ window.deleteRecurring = async function(id) {
         recurringTemplates = recurringTemplates.filter(r => r.id !== id);
         saveToLocalStorage();
         updateDashboard();
-        await syncWithGoogleDrive();
     }
 };
 
@@ -248,7 +100,6 @@ window.editRecurringPrice = async function(id) {
     recurringTemplates = recurringTemplates.map(r => r.id === id ? {...r, amount: newPrice} : r);
     saveToLocalStorage();
     updateDashboard();
-    await syncWithGoogleDrive();
 };
 
 window.deleteTransaction = async function(id) {
@@ -256,7 +107,6 @@ window.deleteTransaction = async function(id) {
         transactions = transactions.filter(t => t.id !== id);
         saveToLocalStorage();
         updateDashboard();
-        await syncWithGoogleDrive();
     }
 };
 // ==========================================
@@ -297,35 +147,51 @@ function updateDashboard() {
     // Δημιουργούμε προσωρινή λίστα για να ενώσουμε κανονικά αρχεία και πάγια
     let activeList = [...transactions];
 
-    // ΑΥΤΟΜΑΤΗ ΕΓΧΥΣΗ ΠΑΓΙΩΝ: Υπολογισμός και "γέννηση" των πάγιων στην οθόνη
-    if (selectedMonth !== 'all') {
-        recurringTemplates.forEach(recur => {
-            activeList.push({
-                id: 'recur-' + recur.id,
-                name: `[Πάγιο] ${recur.name}`,
-                amount: recur.amount,
-                year: selectedYear,
-                month: selectedMonth,
-                type: recur.type,
-                isAuto: true
-            });
-        });
-    } else {
-        // Αν βλέπουμε όλο το έτος, παράγουμε τα πάγια για όλους τους 12 μήνες
-        for (let m = 0; m < 12; m++) {
-            recurringTemplates.forEach(recur => {
+    // Εμφάνιση πάγιων από τη στιγμή που προστέθηκαν και μετά, τόσο για έναν επιλεγμένο μήνα
+    // όσο και για την προβολή «Όλο το Έτος».
+    const selectedYearNum = Number(selectedYear);
+
+    recurringTemplates.forEach(recur => {
+        const recurStartYear = Number(recur.startYear ?? selectedYear);
+        const recurStartMonth = Number(recur.startMonth ?? 0);
+
+        if (selectedMonth === 'all') {
+            for (let month = 0; month < 12; month++) {
+                const isActive =
+                    (selectedYearNum > recurStartYear) ||
+                    (selectedYearNum === recurStartYear && month >= recurStartMonth);
+
+                if (isActive) {
+                    activeList.push({
+                        id: 'recur-' + recur.id + '-' + month,
+                        name: `[Πάγιο] ${recur.name}`,
+                        amount: recur.amount,
+                        year: selectedYear,
+                        month: month.toString(),
+                        type: recur.type,
+                        isAuto: true
+                    });
+                }
+            }
+        } else {
+            const selectedMonthNum = Number(selectedMonth);
+            const isActive =
+                (selectedYearNum > recurStartYear) ||
+                (selectedYearNum === recurStartYear && selectedMonthNum >= recurStartMonth);
+
+            if (isActive) {
                 activeList.push({
-                    id: 'recur-' + recur.id + '-' + m,
+                    id: 'recur-' + recur.id,
                     name: `[Πάγιο] ${recur.name}`,
                     amount: recur.amount,
                     year: selectedYear,
-                    month: m.toString(),
+                    month: selectedMonth,
                     type: recur.type,
                     isAuto: true
                 });
-            });
+            }
         }
-    }
+    });
 
     // Φιλτράρισμα και επεξεργασία της ενιαίας λίστας
     activeList.forEach(trans => {
