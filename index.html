@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <title>Παρακολούθηση Εξόδων</title>
+</head>
+<body>
+
+    <h1>Οικονομικός Βοηθός</h1>
+    
+    <!-- Εδώ εμφανίζεται το σύνολο -->
+    <h2>Συνολικά Έξοδα: <span id="totalDisplay">0</span>€</h2>
+
+    <!-- Φόρμα για εισαγωγή εξόδου -->
+    <div>
+        <input type="text" id="expenseName" placeholder="Τι πληρώσατε; (π.χ. Καφέ)">
+        <input type="number" id="expenseAmount" placeholder="Ποσό σε €">
+        <button id="addExpenseBtn">Προσθήκη Εξόδου</button>
+    </div>
+
+    <!-- Η λίστα όπου θα φαίνονται όλα τα έξοδα -->
+    <h3>Ιστορικό Εξόδων:</h3>
+    <ul id="expenseList"></ul>
+
+    <!-- Σύνδεση με τη JavaScript -->
+    <script src="app.js"></script>
+</body>
+</html>
