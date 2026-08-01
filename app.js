@@ -1,11 +1,12 @@
 // ==========================================
 // ΜΕΡΟΣ 1: ΤΟΠΙΚΗ ΔΙΑΧΕΙΡΙΣΗ & ΣΥΓΧΡΟΝΙΣΜΟΣ CLOUD
 // ==========================================
-
-const SUPABASE_URL = "https://supabase.co";
+const SUPABASE_URL = "https://uyapnscadjnsdivmxeqt.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YXBuc2NhZGpuc2Rpdm14ZXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2MDI0MzksImV4cCI6MjEwMTE3ODQzOX0.idM0d0LaAnYOhoOWurNRGh_G7rRR1EZBsmPHnzTpLJE";
 
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ⚡ Η ΔΙΟΡΘΩΣΗ: Σωστή αρχικοποίηση της βιβλιοθήκης Supabase
+const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Τα δεδομένα τρέχουν ΑΚΑΡΙΑΙΑ από την τοπική μνήμη της συσκευής
 let transactions = JSON.parse(localStorage.getItem('quantum_ledger')) || [];
@@ -36,7 +37,7 @@ function saveToLocalStorage() {
     localStorage.setItem('quantum_recurring', JSON.stringify(recurringTemplates));
 }
 
-// ⚡ ΛΕΙΤΟΥΡΓΙΑ ΣΥΓΧΡΟΝΙΣΜΟΥ: Ανεβάζει τα τοπικά και κατεβάζει τα νέα από το Cloud
+// Λειτουργία Συγχρονισμού με το Cloud
 syncBtn.addEventListener('click', async () => {
     syncBtn.textContent = "⏳ ΣΥΓΧΡΟΝΙΣΜΟΣ...";
     syncBtn.style.opacity = "0.6";
@@ -45,7 +46,6 @@ syncBtn.addEventListener('click', async () => {
         // 1. Καθαρίζουμε τον πίνακα στο Cloud και ανεβάζουμε τα τρέχοντα τοπικά δεδομένα σου
         await supabase.from('quantum_ledger').delete().neq('id', 0);
         if (transactions.length > 0) {
-            // Αφαιρούμε τυχόν εικονικά πάγια (Auto) πριν το ανέβασμα
             const cleanTransactions = transactions.filter(t => !t.isAuto).map(t => ({
                 name: t.name, amount: t.amount, year: t.year, month: t.month, type: t.type
             }));
@@ -79,7 +79,7 @@ syncBtn.addEventListener('click', async () => {
     syncBtn.style.opacity = "1";
 });
 
-// Προσθήκη Πάγιας Εντολής (Τοπικά - Ακαριαία)
+// Προσθήκη Πάγιας Εντολής (Τοπικά)
 addRecurringBtn.addEventListener('click', () => {
     const name = recurName.value;
     const amount = Number(recurAmount.value);
@@ -93,7 +93,7 @@ addRecurringBtn.addEventListener('click', () => {
     updateDashboard();
 });
 
-// Προσθήκη Συναλλαγής (Τοπικά - Ακαριαία)
+// Προσθήκη Συναλλαγής (Τοπικά)
 addTransactionBtn.addEventListener('click', () => {
     const name = transName.value;
     const amount = Number(transAmount.value);
@@ -275,7 +275,7 @@ function updateDashboard() {
     document.getElementById('analyticsContent').innerHTML = analyticsHTML;
 }
 
-// Λειτουργία για αυτόματη συμπλήρωση μέσω των Quick Tags (Μεμονωμένα)
+// Λειτουργία για την αυτόματη συμπλήρωση μέσω των Quick Tags (Μεμονωμένα)
 document.querySelectorAll('.tag-btn').forEach(button => {
     button.addEventListener('click', (e) => {
         transName.value = e.target.getAttribute('data-name');
@@ -284,7 +284,7 @@ document.querySelectorAll('.tag-btn').forEach(button => {
     });
 });
 
-// Λειτουργία για αυτόματη συμπλήρωση μέσω των Quick Tags (Πάγια)
+// Λειτουργία για την αυτόματη συμπλήρωση μέσω των Quick Tags (Πάγια)
 document.querySelectorAll('.recur-tag-btn').forEach(button => {
     button.addEventListener('click', (e) => {
         recurName.value = e.target.getAttribute('data-name');
