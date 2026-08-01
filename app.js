@@ -1,16 +1,7 @@
 // ==========================================
-// ΜΕΡΟΣ 1: ΑΥΤΟΜΑΤΟΣ ΣΥΓΧΡΟΝΙΣΜΟΣ GOOGLE DRIVE
+// ΜΕΡΟΣ 1: ΚΑΘΑΡΗ ΤΟΠΙΚΗ ΔΙΑΧΕΙΡΙΣΗ (LOCAL)
 // ==========================================
 
-// Ενσωματωμένο το δικό σου Google Client ID
-const CLIENT_ID = "://googleusercontent.com";
-const SCOPES = "https://googleapis.com";
-
-let tokenClient;
-let accessToken = null;
-let driveFileId = null;
-
-// Τα δεδομένα τρέχουν ακαριαία (0ms) τοπικά και συγχρονίζουν στο background
 let transactions = JSON.parse(localStorage.getItem('quantum_ledger')) || [];
 let recurringTemplates = JSON.parse(localStorage.getItem('quantum_recurring')) || [];
 
@@ -36,115 +27,8 @@ function saveToLocalStorage() {
     localStorage.setItem('quantum_recurring', JSON.stringify(recurringTemplates));
 }
 
-// 🔐 ΑΥΤΟΜΑΤΗ ΕΚΚΙΝΗΣΗ & ΣΥΝΔΕΣΗ ΜΕ GOOGLE
-window.onload = function () {
-    try {
-        gapi.load('client', async () => {
-            await gapi.client.init({ discoveryDocs: ["https://googleapis.com"] });
-        });
-        
-        tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: CLIENT_ID,
-            scope: SCOPES,
-            callback: async (resp) => {
-                if (resp.error) return;
-                accessToken = resp.access_token;
-                // Αποθηκεύουμε το token τοπικά για να μην ξαναρωτάει
-                localStorage.setItem('drive_access_token', accessToken);
-                await syncWithGoogleDrive();
-            },
-        });
-
-        // 🔄 SILENT LOGIN: Αν ο χρήστης έχει ξαναμπει, ζητάει token αθόρυβα χωρίς παράθυρο!
-        const savedToken = localStorage.getItem('drive_access_token');
-        if (savedToken) {
-            accessToken = savedToken;
-            gapi.client.setToken({ access_token: accessToken });
-            await syncWithGoogleDrive();
-        } else {
-            // Αν είναι η πρώτη φορά, ζητάει έγκριση αμέσως μόλις ανοίξει η σελίδα
-            tokenClient.requestAccessToken({ prompt: 'none' });
-        }
-    } catch (e) {
-        console.log("Offline mode active.");
-    }
-};
-
-// ☁️ ΜΗΧΑΝΙΣΜΟΣ ΠΑΡΑΛΛΗΛΟΥ ΣΥΓΧΡΟΝΙΣΜΟΥ
-async function syncWithGoogleDrive() {
-    if (!accessToken) return;
-    try {
-        let res = await gapi.client.drive.files.list({
-            q: "name='quantum_budget_data.json'",
-            spaces: 'appDataFolder',
-            fields: 'files(id)'
-        });
-        
-        let files = res.result.files;
-        let cloudData = null;
-
-        if (files && files.length > 0) {
-            driveFileId = files[0].id;
-            let fileContent = await gapi.client.drive.files.get({
-                fileId: driveFileId,
-                alt: 'media'
-            });
-            cloudData = fileContent.result;
-        }
-
-        if (cloudData) {
-            // Αν το cloud έχει δεδομένα και η συσκευή είναι άδεια, τραβάει του cloud
-            if (transactions.length === 0 && cloudData.transactions) transactions = cloudData.transactions;
-            if (recurringTemplates.length === 0 && cloudData.recurring) recurringTemplates = cloudData.recurring;
-        }
-
-        const boundary = 'foo_bar_baz';
-        const delimiter = "\r\n--" + boundary + "\r\n";
-        const close_delim = "\r\n--" + boundary + "--";
-        
-        const metadata = {
-            'name': 'quantum_budget_data.json',
-            'parents': ['appDataFolder']
-        };
-        const data = { transactions, recurring: recurringTemplates };
-
-        const multipartRequestBody =
-            delimiter + 'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-            JSON.stringify(metadata) + delimiter +
-            'Content-Type: application/json\r\n\r\n' +
-            JSON.stringify(data) + close_delim;
-
-        if (driveFileId) {
-            await gapi.client.request({
-                'path': '/upload/drive/v3/files/' + driveFileId,
-                'method': 'PATCH',
-                'params': {'uploadType': 'multipart'},
-                'headers': {'Content-Type': 'multipart/related; boundary="' + boundary + '"'},
-                'body': multipartRequestBody
-            });
-        } else {
-            let createRes = await gapi.client.request({
-                'path': '/upload/drive/v3/files',
-                'method': 'POST',
-                'params': {'uploadType': 'multipart'},
-                'headers': {'Content-Type': 'multipart/related; boundary="' + boundary + '"'},
-                'body': multipartRequestBody
-            });
-            driveFileId = createRes.result.id;
-        }
-
-        saveToLocalStorage();
-        updateDashboard();
-    } catch (e) {
-        // Αν το token έληξε, ζητάει ανανέωση αθόρυβα
-        if(e.status === 401 && tokenClient) {
-            tokenClient.requestAccessToken({ prompt: 'none' });
-        }
-    }
-}
-
 // Προσθήκη Πάγιας Εντολής
-addRecurringBtn.addEventListener('click', async () => {
+addRecurringBtn.addEventListener('click', () => {
     const name = recurName.value;
     const amount = Number(recurAmount.value);
     const type = recurType.value;
@@ -155,11 +39,10 @@ addRecurringBtn.addEventListener('click', async () => {
     recurName.value = "";
     recurAmount.value = "";
     updateDashboard();
-    await syncWithGoogleDrive();
 });
 
 // Προσθήκη Συναλλαγής
-addTransactionBtn.addEventListener('click', async () => {
+addTransactionBtn.addEventListener('click', () => {
     const name = transName.value;
     const amount = Number(transAmount.value);
     const monthYearValue = transMonthYear.value;
@@ -174,36 +57,32 @@ addTransactionBtn.addEventListener('click', async () => {
     transName.value = "";
     transAmount.value = "";
     updateDashboard();
-    await syncWithGoogleDrive();
 });
 
 viewYear.addEventListener('change', updateDashboard);
 viewMonth.addEventListener('change', updateDashboard);
 
-window.deleteRecurring = async function(id) {
+window.deleteRecurring = function(id) {
     if(confirm("Κατάργηση αυτής της πάγιας εντολής;")) {
         recurringTemplates = recurringTemplates.filter(r => r.id !== id);
         saveToLocalStorage();
         updateDashboard();
-        await syncWithGoogleDrive();
     }
 };
 
-window.editRecurringPrice = async function(id) {
+window.editRecurringPrice = function(id) {
     const newPrice = Number(prompt("Εισάγετε τη νέα τιμή:"));
     if (isNaN(newPrice) || newPrice <= 0) return alert("Μη έγκυρη τιμή!");
     recurringTemplates = recurringTemplates.map(r => r.id === id ? {...r, amount: newPrice} : r);
     saveToLocalStorage();
     updateDashboard();
-    await syncWithGoogleDrive();
 };
 
-window.deleteTransaction = async function(id) {
+window.deleteTransaction = function(id) {
     if(confirm("Διαγραφή συναλλαγής;")) {
         transactions = transactions.filter(t => t.id !== id);
         saveToLocalStorage();
         updateDashboard();
-        await syncWithGoogleDrive();
     }
 };
 // ==========================================
