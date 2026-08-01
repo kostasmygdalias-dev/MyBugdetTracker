@@ -1,10 +1,18 @@
 // ==========================================
-// ΜΕΡΟΣ 1: ΒΑΣΗ ΔΕΔΟΜΕΝΩΝ & ΔΙΑΧΕΙΡΙΣΗ ΠΑΓΙΩΝ
+// ΜΕΡΟΣ 1: ΣΥΝΔΕΣΗ ΜΕ ΤΗΝ ONLINE ΒΑΣΗ (SUPABASE) & ΕΓΓΡΑΦΕΣ
 // ==========================================
 
-let transactions = JSON.parse(localStorage.getItem('quantum_ledger')) || [];
-let recurringTemplates = JSON.parse(localStorage.getItem('quantum_recurring')) || [];
+// ΑΝΤΙΚΑΤΑΣΤΗΣΕ ΑΥΤΑ ΤΑ ΔΥΟ ΜΕ ΤΑ ΔΙΚΑ ΣΟΥ ΣΤΟΙΧΕΙΑ ΑΠΟ ΤΟ SUPABASE: SETTINGS -> API
+const SUPABASE_URL = "https://uyapnscadjnsdivmxeqt.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YXBuc2NhZGpuc2Rpdm14ZXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2MDI0MzksImV4cCI6MjEwMTE3ODQzOX0.idM0d0LaAnYOhoOWurNRGh_G7rRR1EZBsmPHnzTpLJE";
 
+// Δημιουργία σύνδεσης με τη βάση
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let transactions = [];
+let recurringTemplates = [];
+
+// Σύνδεση με HTML στοιχεία
 const transName = document.getElementById('transName');
 const transAmount = document.getElementById('transAmount');
 const transMonthYear = document.getElementById('transMonthYear');
@@ -21,89 +29,92 @@ const recurringList = document.getElementById('recurringList');
 const viewYear = document.getElementById('viewYear');
 const viewMonth = document.getElementById('viewMonth');
 
+// Αυτόματος ορισμός τρέχοντος μήνα
 const now = new Date();
 transMonthYear.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-addRecurringBtn.addEventListener('click', () => {
+// Φόρτωση δεδομένων από το Cloud κατά την εκκίνηση
+async function loadDataFromCloud() {
+    // 1. Τραβάμε τις κανονικές συναλλαγές
+    const { data: ledgerData, error: err1 } = await supabase.from('quantum_ledger').select('*');
+    if (!err1) transactions = ledgerData || [];
+
+    // 2. Τραβάμε τις πάγιες εντολές
+    const { data: recurData, error: err2 } = await supabase.from('quantum_recurring').select('*');
+    if (!err2) recurringTemplates = recurData || [];
+
+    updateDashboard();
+}
+
+// Λειτουργία: Ορισμός Νέας Πάγιας Εντολής στο Cloud
+addRecurringBtn.addEventListener('click', async () => {
     const name = recurName.value;
     const amount = Number(recurAmount.value);
     const type = recurType.value;
 
-    if (name === "" || amount <= 0) return alert("Συμπληρώστε σωστά τα στοιχεία του παγίου!");
+    if (name === "" || amount <= 0) return alert("Συμπληρώστε σωστά τα στοιχεία!");
 
-    const newRecur = {
-        id: Date.now(),
-        name: name,
-        amount: amount,
-        type: type
-    };
-
-    recurringTemplates.push(newRecur);
-    localStorage.setItem('quantum_recurring', JSON.stringify(recurringTemplates));
+    const { error } = await supabase.from('quantum_recurring').insert([{ name, amount, type }]);
     
-    recurName.value = "";
-    recurAmount.value = "";
-    updateDashboard();
+    if (error) {
+        alert("Σφάλμα σύνδεσης με το Cloud!");
+    } else {
+        recurName.value = "";
+        recurAmount.value = "";
+        await loadDataFromCloud();
+    }
 });
 
-addTransactionBtn.addEventListener('click', () => {
+// Λειτουργία: Προσθήκη Μεμονωμένης Συναλλαγής στο Cloud
+addTransactionBtn.addEventListener('click', async () => {
     const name = transName.value;
     const amount = Number(transAmount.value);
     const monthYearValue = transMonthYear.value;
     const typeValue = transType.value;
 
-    if (name === "" || amount <= 0 || monthYearValue === "") return alert("Συμπληρώστε σωστά όλα τα στοιχεία!");
+    if (name === "" || amount <= 0 || monthYearValue === "") return alert("Συμπληρώστε όλα τα στοιχεία!");
 
     const [yearPart, monthPart] = monthYearValue.split('-');
     const parsedMonthIndex = (parseInt(monthPart) - 1).toString();
 
-    const newTransaction = {
-        id: Date.now(),
-        name: name,
-        amount: amount,
-        year: yearPart,
-        month: parsedMonthIndex,
-        type: typeValue,
-        isAuto: false
-    };
-
-    transactions.push(newTransaction);
-    localStorage.setItem('quantum_ledger', JSON.stringify(transactions));
+    const { error } = await supabase.from('quantum_ledger').insert([
+        { name, amount, year: yearPart, month: parsedMonthIndex, type: typeValue }
+    ]);
     
-    transName.value = "";
-    transAmount.value = "";
-    updateDashboard();
+    if (error) {
+        alert("Σφάλμα κατά την αποθήκευση στο Cloud!");
+    } else {
+        transName.value = "";
+        transAmount.value = "";
+        await loadDataFromCloud();
+    }
 });
 
 viewYear.addEventListener('change', updateDashboard);
 viewMonth.addEventListener('change', updateDashboard);
 
-window.deleteRecurring = function(id) {
-    if(confirm("Κατάργηση αυτής της πάγιας εντολής για το μέλλον;")) {
-        recurringTemplates = recurringTemplates.filter(r => r.id !== id);
-        localStorage.setItem('quantum_recurring', JSON.stringify(recurringTemplates));
-        updateDashboard();
+// Λειτουργία: Διαγραφή Πάγιας Εντολής από το Cloud
+window.deleteRecurring = async function(id) {
+    if(confirm("Κατάργηση αυτής της πάγιας εντολής;")) {
+        await supabase.from('quantum_recurring').delete().eq('id', id);
+        await loadDataFromCloud();
     }
 };
 
-window.editRecurringPrice = function(id) {
-    const newPrice = Number(prompt("Εισάγετε τη νέα τιμή για αυτή την πάγια εντολή (Δεν επηρεάζει το παρελθόν):"));
+// Λειτουργία: Αλλαγή Τιμής Πάγιου Εξόδου στο Cloud
+window.editRecurringPrice = async function(id) {
+    const newPrice = Number(prompt("Εισάγετε τη νέα τιμή:"));
     if (isNaN(newPrice) || newPrice <= 0) return alert("Μη έγκυρη τιμή!");
 
-    recurringTemplates = recurringTemplates.map(r => {
-        if (r.id === id) return { ...r, amount: newPrice };
-        return r;
-    });
-
-    localStorage.setItem('quantum_recurring', JSON.stringify(recurringTemplates));
-    updateDashboard();
+    await supabase.from('quantum_recurring').update({ amount: newPrice }).eq('id', id);
+    await loadDataFromCloud();
 };
 
-window.deleteTransaction = function(id) {
+// Λειτουργία: Διαγραφή Απλής Συναλλαγής από το Cloud
+window.deleteTransaction = async function(id) {
     if(confirm("Διαγραφή συναλλαγής;")) {
-        transactions = transactions.filter(t => t.id !== id);
-        localStorage.setItem('quantum_ledger', JSON.stringify(transactions));
-        updateDashboard();
+        await supabase.from('quantum_ledger').delete().eq('id', id);
+        await loadDataFromCloud();
     }
 };
 // ==========================================
@@ -258,9 +269,9 @@ document.querySelectorAll('.recur-tag-btn').forEach(button => {
     button.addEventListener('click', (e) => {
         recurName.value = e.target.getAttribute('data-name');
         recurType.value = e.target.getAttribute('data-category');
-        recurAmount.focus(); // Στέλνει τον κέρσορα κατευθείαν στο ποσό του παγίου
+        recurAmount.focus();
     });
 });
 
-// Εκκίνηση της οθόνης κατά το πρώτο άνοιγμα
-updateDashboard();
+// Εκκίνηση της οθόνης και αυτόματη φόρτωση από το Cloud
+loadDataFromCloud();
