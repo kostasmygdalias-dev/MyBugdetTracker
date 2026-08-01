@@ -1,5 +1,8 @@
+/* ========================================================
+   ΒΑΣΙΚΟ ΦΟΥΤΟΥΡΙΣΤΙΚΟ ΣΤΥΛ (ΓΙΑ ΥΠΟΛΟΓΙΣΤΕΣ & TABLETS)
+   ======================================================== */
 body {
-    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: radial-gradient(circle at center, #0f0c1b, #05020a);
     color: #00ffff;
     display: flex;
@@ -7,25 +10,27 @@ body {
     align-items: center;
     min-height: 100vh;
     margin: 0;
-    padding: 20px 0;
+    padding: 15px;
+    box-sizing: border-box;
 }
 
 .container {
-    background: rgba(15, 12, 27, 0.6);
+    background: rgba(15, 12, 27, 0.7);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(0, 255, 255, 0.15);
     padding: 25px;
     border-radius: 28px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 255, 255, 0.05);
-    width: 420px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+    width: 100%;
+    max-width: 440px; /* Σωστό μέγεθος για desktop */
     box-sizing: border-box;
 }
 
 h1 {
     font-size: 24px;
     text-transform: uppercase;
-    letter-spacing: 3px;
+    letter-spacing: 2px;
     color: #ffffff;
     text-shadow: 0 0 10px rgba(0, 255, 255, 0.6);
     margin-top: 0;
@@ -36,19 +41,42 @@ h3 {
     font-size: 13px;
     color: #ff007f;
     text-transform: uppercase;
-    text-align: left;
     margin-top: 15px;
     margin-bottom: 10px;
     letter-spacing: 1px;
+    text-align: left;
 }
 
-/* Πάνελ Dashboard & Φίλτρων */
-.dashboard-panel {
+.dashboard-panel, .recurring-panel, .record-panel {
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 20px;
     padding: 15px;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
+}
+
+.recurring-panel { border: 1px solid rgba(255, 0, 127, 0.15); }
+
+.recurring-inputs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.recurring-inputs input, .recurring-inputs select {
+    padding: 10px;
+    font-size: 12px;
+}
+
+.recurring-inputs button {
+    background: #ff007f;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 0 14px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
 }
 
 .time-filter {
@@ -65,15 +93,13 @@ h3 {
 
 .time-filter select {
     width: auto;
-    padding: 5px 8px;
+    padding: 6px 10px;
     background: #090614;
     color: #fff;
     border: 1px solid #00ffff;
     border-radius: 6px;
-    margin-bottom: 0;
 }
 
-/* Πλέγμα Στατιστικών */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -86,20 +112,13 @@ h3 {
     border: 1px solid rgba(255, 255, 255, 0.05);
     padding: 10px 5px;
     border-radius: 12px;
-    font-size: 10px;
+    font-size: 11px;
     color: #8a8a9e;
-    text-transform: uppercase;
 }
 
-.stat-box div {
-    font-size: 15px;
-    font-weight: bold;
-    margin-top: 4px;
-}
-
-.income-glow div { color: #00ff88; text-shadow: 0 0 10px rgba(0,255,136,0.3); }
-.expense-glow div { color: #ff0055; text-shadow: 0 0 10px rgba(255,0,85,0.3); }
-.net-glow div { text-shadow: 0 0 10px rgba(0,255,255,0.3); }
+.stat-box div { font-size: 16px; font-weight: bold; margin-top: 4px; }
+.income-glow div { color: #00ff88; }
+.expense-glow div { color: #ff0055; }
 
 .analytics-box {
     background: rgba(0, 0, 0, 0.2);
@@ -108,87 +127,45 @@ h3 {
     text-align: left;
 }
 
-/* Πάνελ Καταγραφής */
-.record-panel {
-    background: rgba(255, 255, 255, 0.01);
-    border: 1px solid rgba(0, 255, 255, 0.1);
-    border-radius: 20px;
-    padding: 15px;
-    margin-bottom: 20px;
-}
-
-.quick-tags-container {
-    text-align: left;
-    margin-bottom: 15px;
-    max-height: 120px;
+.quick-tags-container { 
+    text-align: left; 
+    margin-bottom: 12px; 
+    max-height: 140px;
     overflow-y: auto;
-    padding-right: 5px;
 }
-
-.tag-group {
-    margin-bottom: 8px;
-}
-
-.group-label {
-    font-size: 9px;
-    color: #8a8a9e;
-    display: block;
-    margin-bottom: 2px;
-    font-weight: bold;
-}
+.tag-group { margin-bottom: 8px; }
+.group-label { font-size: 10px; color: #8a8a9e; display: block; margin-bottom: 4px; }
 
 .tag-btn {
     display: inline-block;
-    padding: 4px 10px;
-    margin: 2px 1px;
-    font-size: 10px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 6px 12px;
+    margin: 3px 2px;
+    font-size: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(0, 255, 255, 0.25);
     color: #e0e0ff;
-    border-radius: 12px;
+    border-radius: 14px;
     cursor: pointer;
     transition: all 0.2s;
 }
+.tag-btn:hover { background: rgba(0, 255, 255, 0.15); border-color: #00ffff; }
 
-.tag-btn:hover {
-    background: rgba(0, 255, 255, 0.15);
-    border-color: #00ffff;
-    color: #fff;
-}
-
-/* Σειρές Inputs */
-.inputs-row {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 10px;
-}
-
+.inputs-row { display: flex; gap: 8px; margin-bottom: 8px; }
 input, select {
     width: 100%;
-    padding: 11px;
+    padding: 12px;
     background: rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(0, 255, 255, 0.2);
     border-radius: 10px;
     color: #ffffff;
-    font-size: 13px;
+    font-size: 14px;
     box-sizing: border-box;
-    margin-bottom: 0;
 }
-
-input:focus, select:focus {
-    outline: none;
-    border-color: #ff007f;
-    box-shadow: 0 0 10px rgba(255, 0, 127, 0.2);
-}
-
-input[type="month"]::-webkit-calendar-picker-indicator {
-    filter: invert(1); /* Κάνει το εικονίδιο του ημερολογίου λευκό */
-    cursor: pointer;
-}
+input:focus, select:focus { border-color: #ff007f; }
 
 button#addTransactionBtn {
     width: 100%;
-    padding: 12px;
+    padding: 14px;
     background: linear-gradient(45deg, #00ffff, #ff007f);
     color: white;
     border: none;
@@ -196,29 +173,14 @@ button#addTransactionBtn {
     font-size: 14px;
     font-weight: bold;
     cursor: pointer;
-    letter-spacing: 1px;
-    transition: 0.2s;
 }
 
-button#addTransactionBtn:hover {
-    box-shadow: 0 0 15px rgba(255, 0, 127, 0.4);
-    transform: translateY(-1px);
-}
-
-/* Λίστα */
-ul {
-    list-style-type: none;
-    padding: 0;
-    max-height: 150px;
-    overflow-y: auto;
-    margin: 0;
-}
-
+ul { list-style-type: none; padding: 0; max-height: 150px; overflow-y: auto; margin: 0; }
 li {
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(255, 255, 255, 0.05);
-    padding: 10px 15px;
-    margin-bottom: 8px;
+    padding: 12px 15px;
+    margin-bottom: 6px;
     border-radius: 10px;
     font-size: 13px;
     display: flex;
@@ -227,22 +189,68 @@ li {
     color: #e0e0ff;
 }
 
-.delete-btn {
-    background: rgba(255, 0, 85, 0.2);
-    border: 1px solid #ff0055;
-    color: #ff0055;
-    padding: 2px 7px;
-    font-size: 10px;
-    border-radius: 5px;
-    cursor: pointer;
-}
+.compact-list li { padding: 8px 12px; font-size: 12px; border-left: 3px solid #ff007f; }
 
-.delete-btn:hover {
-    background: #ff0055;
-    color: #fff;
-}
+.delete-btn { background: rgba(255, 0, 85, 0.2); border: 1px solid #ff0055; color: #ff0055; padding: 4px 8px; font-size: 11px; border-radius: 6px; cursor: pointer; }
 
-/* Scrollbar Style */
 ::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(0, 255, 255, 0.2); border-radius: 10px; }
+
+/* ========================================================
+   ⚠️ ΕΙΔΙΚΕΣ ΡΥΘΜΙΣΕΙΣ ΜΟΝΟ ΓΙΑ ΚΙΝΗΤΑ (RESPONSIVE)
+   ======================================================== */
+@media (max-width: 480px) {
+    body {
+        padding: 5px; /* Λιγότερο κενό γύρω-γύρω στο κινητό */
+        align-items: flex-start; /* Επιτρέπει σκρολ αν είναι μεγάλη η σελίδα */
+    }
+
+    .container {
+        padding: 15px; /* Πιο μαζεμένο εσωτερικό padding */
+        border-radius: 16px; /* Ελαφρώς πιο τετραγωνισμένες γωνίες για να κερδίσουμε χώρο */
+    }
+
+    h1 {
+        font-size: 20px; /* Μικραίνει ο κεντρικός τίτλος */
+    }
+
+    /* Τα πάγια κουμπιά εισαγωγής γίνονται κάθετα για να μην κολάνε */
+    .recurring-inputs {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .recurring-inputs button {
+        padding: 10px;
+        width: 100%;
+    }
+
+    /* Τα Quick Tags μεγαλώνουν για να πατιούνται πανεύκολα με το δάχτυλο */
+    .tag-btn {
+        padding: 8px 14px;
+        font-size: 13px;
+        margin: 4px 2px;
+    }
+
+    /* Οι στατιστικοί αριθμοί γίνονται πιο ευανάγνωστοι */
+    .stat-box div {
+        font-size: 14px;
+    }
+
+    /* Οι σειρές των input γίνονται κάθετες αν η οθόνη είναι πολύ μικρή */
+    .inputs-row {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    /* Μεγαλώνουμε τα action buttons για άνετο touch */
+    button#addTransactionBtn {
+        padding: 15px;
+        font-size: 15px;
+    }
+
+    li {
+        padding: 12px 10px; /* Περισσότερος χώρος καθ' ύψος για τις γραμμές ιστορικού */
+        font-size: 12px;
+    }
+}
