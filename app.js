@@ -1,8 +1,8 @@
 // ==========================================
-// ΜΕΡΟΣ 1: ΔΕΔΟΜΕΝΑ, GOOGLE DRIVE API & AUTH
+// ΜΕΡΟΣ 1: ΑΥΤΟΜΑΤΟΣ ΣΥΓΧΡΟΝΙΣΜΟΣ GOOGLE DRIVE
 // ==========================================
 
-// ⚠️ ΒΑΛΕ ΕΔΩ ΤΟ ΔΙΚΟ ΣΟΥ CLIENT ID ΑΠΟ ΤΟ GOOGLE CLOUD CONSOLE
+// Ενσωματωμένο το δικό σου Google Client ID
 const CLIENT_ID = "://googleusercontent.com";
 const SCOPES = "https://googleapis.com";
 
@@ -10,11 +10,10 @@ let tokenClient;
 let accessToken = null;
 let driveFileId = null;
 
-// Τα δεδομένα τρέχουν ΑΚΑΡΙΑΙΑ από την τοπική μνήμη για να μην κολλάει ποτέ το App
+// Τα δεδομένα τρέχουν ακαριαία (0ms) τοπικά και συγχρονίζουν στο background
 let transactions = JSON.parse(localStorage.getItem('quantum_ledger')) || [];
 let recurringTemplates = JSON.parse(localStorage.getItem('quantum_recurring')) || [];
 
-// HTML Στοιχεία
 const transName = document.getElementById('transName');
 const transAmount = document.getElementById('transAmount');
 const transMonthYear = document.getElementById('transMonthYear');
@@ -28,7 +27,6 @@ const addRecurringBtn = document.getElementById('addRecurringBtn');
 const recurringList = document.getElementById('recurringList');
 const viewYear = document.getElementById('viewYear');
 const viewMonth = document.getElementById('viewMonth');
-const loginBtn = document.getElementById('loginBtn');
 
 const now = new Date();
 transMonthYear.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -38,38 +36,44 @@ function saveToLocalStorage() {
     localStorage.setItem('quantum_recurring', JSON.stringify(recurringTemplates));
 }
 
-// 🔐 ΑΡΧΙΚΟΠΟΙΗΣΗ GOOGLE SIGN-IN
+// 🔐 ΑΥΤΟΜΑΤΗ ΕΚΚΙΝΗΣΗ & ΣΥΝΔΕΣΗ ΜΕ GOOGLE
 window.onload = function () {
     try {
         gapi.load('client', async () => {
             await gapi.client.init({ discoveryDocs: ["https://googleapis.com"] });
         });
+        
         tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: CLIENT_ID,
             scope: SCOPES,
             callback: async (resp) => {
                 if (resp.error) return;
                 accessToken = resp.access_token;
-                loginBtn.textContent = "🔄 ΣΥΓΧΡΟΝΙΣΜΟΣ ΕΝΕΡΓΟΣ (DRIVE)";
-                loginBtn.style.background = "linear-gradient(45deg, #00ff88, #00ffff)";
-                loginBtn.style.color = "#000";
+                // Αποθηκεύουμε το token τοπικά για να μην ξαναρωτάει
+                localStorage.setItem('drive_access_token', accessToken);
                 await syncWithGoogleDrive();
             },
         });
+
+        // 🔄 SILENT LOGIN: Αν ο χρήστης έχει ξαναμπει, ζητάει token αθόρυβα χωρίς παράθυρο!
+        const savedToken = localStorage.getItem('drive_access_token');
+        if (savedToken) {
+            accessToken = savedToken;
+            gapi.client.setToken({ access_token: accessToken });
+            await syncWithGoogleDrive();
+        } else {
+            // Αν είναι η πρώτη φορά, ζητάει έγκριση αμέσως μόλις ανοίξει η σελίδα
+            tokenClient.requestAccessToken({ prompt: 'none' });
+        }
     } catch (e) {
-        console.log("Google SDK load error or offline mode.");
+        console.log("Offline mode active.");
     }
 };
 
-loginBtn.addEventListener('click', () => {
-    if (tokenClient) tokenClient.requestAccessToken({ prompt: 'consent' });
-});
-
-// ☁️ ΜΗΧΑΝΙΣΜΟΣ ΑΥΤΟΜΑΤΟΥ ΣΥΓΧΡΟΝΙΣΜΟΥ ΜΕ GOOGLE DRIVE
+// ☁️ ΜΗΧΑΝΙΣΜΟΣ ΠΑΡΑΛΛΗΛΟΥ ΣΥΓΧΡΟΝΙΣΜΟΥ
 async function syncWithGoogleDrive() {
     if (!accessToken) return;
     try {
-        // 1. Ψάχνουμε αν υπάρχει ήδη το αρχείο μας στο κρυφό AppData του Drive
         let res = await gapi.client.drive.files.list({
             q: "name='quantum_budget_data.json'",
             spaces: 'appDataFolder',
@@ -81,7 +85,6 @@ async function syncWithGoogleDrive() {
 
         if (files && files.length > 0) {
             driveFileId = files[0].id;
-            // Κατεβάζουμε τα δεδομένα από το Cloud
             let fileContent = await gapi.client.drive.files.get({
                 fileId: driveFileId,
                 alt: 'media'
@@ -90,12 +93,11 @@ async function syncWithGoogleDrive() {
         }
 
         if (cloudData) {
-            // Ένωση δεδομένων: Κρατάμε τα πιο πρόσφατα ή αν το τοπικό είναι άδειο, παίρνουμε του Cloud
+            // Αν το cloud έχει δεδομένα και η συσκευή είναι άδεια, τραβάει του cloud
             if (transactions.length === 0 && cloudData.transactions) transactions = cloudData.transactions;
             if (recurringTemplates.length === 0 && cloudData.recurring) recurringTemplates = cloudData.recurring;
         }
 
-        // 2. Ανεβάζουμε τα τελικά δεδομένα πίσω στο Drive για να είναι ολόκληρα
         const boundary = 'foo_bar_baz';
         const delimiter = "\r\n--" + boundary + "\r\n";
         const close_delim = "\r\n--" + boundary + "--";
@@ -113,7 +115,6 @@ async function syncWithGoogleDrive() {
             JSON.stringify(data) + close_delim;
 
         if (driveFileId) {
-            // Ενημέρωση υπάρχοντος αρχείου
             await gapi.client.request({
                 'path': '/upload/drive/v3/files/' + driveFileId,
                 'method': 'PATCH',
@@ -122,7 +123,6 @@ async function syncWithGoogleDrive() {
                 'body': multipartRequestBody
             });
         } else {
-            // Δημιουργία νέου αρχείου
             let createRes = await gapi.client.request({
                 'path': '/upload/drive/v3/files',
                 'method': 'POST',
@@ -136,11 +136,14 @@ async function syncWithGoogleDrive() {
         saveToLocalStorage();
         updateDashboard();
     } catch (e) {
-        console.error("Drive sync failed", e);
+        // Αν το token έληξε, ζητάει ανανέωση αθόρυβα
+        if(e.status === 401 && tokenClient) {
+            tokenClient.requestAccessToken({ prompt: 'none' });
+        }
     }
 }
 
-// Προσθήκη Πάγιας Εντολής (Τοπικά - Ακαριαία)
+// Προσθήκη Πάγιας Εντολής
 addRecurringBtn.addEventListener('click', async () => {
     const name = recurName.value;
     const amount = Number(recurAmount.value);
@@ -152,10 +155,10 @@ addRecurringBtn.addEventListener('click', async () => {
     recurName.value = "";
     recurAmount.value = "";
     updateDashboard();
-    if (accessToken) await syncWithGoogleDrive(); // Συγχρονισμός στο παρασκήνιο
+    await syncWithGoogleDrive();
 });
 
-// Προσθήκη Συναλλαγής (Τοπικά - Ακαριαία)
+// Προσθήκη Συναλλαγής
 addTransactionBtn.addEventListener('click', async () => {
     const name = transName.value;
     const amount = Number(transAmount.value);
@@ -171,7 +174,7 @@ addTransactionBtn.addEventListener('click', async () => {
     transName.value = "";
     transAmount.value = "";
     updateDashboard();
-    if (accessToken) await syncWithGoogleDrive(); // Συγχρονισμός στο παρασκήνιο
+    await syncWithGoogleDrive();
 });
 
 viewYear.addEventListener('change', updateDashboard);
@@ -182,7 +185,7 @@ window.deleteRecurring = async function(id) {
         recurringTemplates = recurringTemplates.filter(r => r.id !== id);
         saveToLocalStorage();
         updateDashboard();
-        if (accessToken) await syncWithGoogleDrive();
+        await syncWithGoogleDrive();
     }
 };
 
@@ -192,7 +195,7 @@ window.editRecurringPrice = async function(id) {
     recurringTemplates = recurringTemplates.map(r => r.id === id ? {...r, amount: newPrice} : r);
     saveToLocalStorage();
     updateDashboard();
-    if (accessToken) await syncWithGoogleDrive();
+    await syncWithGoogleDrive();
 };
 
 window.deleteTransaction = async function(id) {
@@ -200,7 +203,7 @@ window.deleteTransaction = async function(id) {
         transactions = transactions.filter(t => t.id !== id);
         saveToLocalStorage();
         updateDashboard();
-        if (accessToken) await syncWithGoogleDrive();
+        await syncWithGoogleDrive();
     }
 };
 // ==========================================
