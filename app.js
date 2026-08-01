@@ -2,7 +2,7 @@
 // ΜΕΡΟΣ 1: ΤΟΠΙΚΗ ΔΙΑΧΕΙΡΙΣΗ & ΣΥΓΧΡΟΝΙΣΜΟΣ CLOUD
 // ==========================================
 
-const SUPABASE_URL = "https://uyapnscadjnsdivmxeqt.supabase.co";
+const SUPABASE_URL = "https://supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YXBuc2NhZGpuc2Rpdm14ZXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2MDI0MzksImV4cCI6MjEwMTE3ODQzOX0.idM0d0LaAnYOhoOWurNRGh_G7rRR1EZBsmPHnzTpLJE";
 
 // ✨ Η ΜΕΓΑΛΗ ΔΙΟΡΘΩΣΗ: Χρήση του σωστού αντικειμένου χωρίς να μπερδεύεται η JavaScript
