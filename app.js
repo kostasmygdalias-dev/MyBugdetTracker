@@ -1,14 +1,16 @@
 // ==========================================
-// ΜΕΡΟΣ 1: ΑΥΤΟΜΑΤΟΣ ΣΥΓΧΡΟΝΙΣΜΟΣ GOOGLE DRIVE
+// ΜΕΡΟΣ 1: ΔΕΔΟΜΕΝΑ & GOOGLE DRIVE API AUTH
 // ==========================================
 
-const CLIENT_ID = "://googleusercontent.com";
+// Το δικό σου σωστό Google Client ID
+const CLIENT_ID = "975272398511-aj3jsnp0bpm4e3eq3nr4mcdhb4q76ujm.apps.googleusercontent.com";
 const SCOPES = "https://googleapis.com";
 
-let tokenClient;
+let tokenClient = null;
 let accessToken = null;
 let driveFileId = null;
 
+// Τα δεδομένα τρέχουν ακαριαία (0ms) τοπικά από το LocalStorage
 let transactions = JSON.parse(localStorage.getItem('quantum_ledger')) || [];
 let recurringTemplates = JSON.parse(localStorage.getItem('quantum_recurring')) || [];
 
@@ -25,7 +27,7 @@ const addRecurringBtn = document.getElementById('addRecurringBtn');
 const recurringList = document.getElementById('recurringList');
 const viewYear = document.getElementById('viewYear');
 const viewMonth = document.getElementById('viewMonth');
-const loginBtn = document.getElementById('loginBtn'); // Σύνδεση με το κουμπί
+const loginBtn = document.getElementById('loginBtn');
 
 const now = new Date();
 transMonthYear.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -35,50 +37,61 @@ function saveToLocalStorage() {
     localStorage.setItem('quantum_recurring', JSON.stringify(recurringTemplates));
 }
 
-// 🔐 ΑΡΧΙΚΟΠΟΙΗΣΗ & ΑΣΦΑΛΗΣ ΣΥΝΔΕΣΗ ΜΕ ΚΟΥΜΠΙ
-window.onload = function () {
-    try {
-        gapi.load('client', async () => {
-            await gapi.client.init({ discoveryDocs: ["https://googleapis.com"] });
-        });
-        
-        tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: CLIENT_ID,
-            scope: SCOPES,
-            callback: async (resp) => {
-                if (resp.error) return;
-                accessToken = resp.access_token;
-                localStorage.setItem('drive_access_token', accessToken);
-                loginBtn.style.display = "none"; // Κρύβουμε το κουμπί αφού συνδεθήκαμε!
-                await syncWithGoogleDrive();
-            },
-        });
+// 🔐 ΑΣΦΑΛΗΣ ΑΡΧΙΚΟΠΟΙΗΣΗ GOOGLE SDK
+window.addEventListener('load', () => {
+    // Περιμένουμε 1 δευτερόλεπτο να φορτώσουν τα scripts της Google από την HTML
+    setTimeout(() => {
+        try {
+            if (typeof gapi !== 'undefined') {
+                gapi.load('client', async () => {
+                    await gapi.client.init({ discoveryDocs: ["https://googleapis.com"] });
+                });
+            }
 
-        // Έλεγχος αν υπάρχει ήδη αποθηκευμένο Token
-        const savedToken = localStorage.getItem('drive_access_token');
-        if (savedToken) {
-            accessToken = savedToken;
-            gapi.client.setToken({ access_token: accessToken });
-            await syncWithGoogleDrive();
-        } else {
-            // Αν δεν υπάρχει, εμφανίζουμε το κουμπί για να το πατήσει ο χρήστης χειροκίνητα
-            loginBtn.style.display = "block";
+            if (typeof google !== 'undefined' && google.accounts) {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CLIENT_ID,
+                    scope: SCOPES,
+                    callback: async (resp) => {
+                        if (resp.error) return;
+                        accessToken = resp.access_token;
+                        localStorage.setItem('drive_access_token', accessToken);
+                        if (loginBtn) loginBtn.style.display = "none"; // Κρύβουμε το κουμπί
+                        await syncWithGoogleDrive();
+                    },
+                });
+            }
+
+            // Έλεγχος για Silent Login
+            const savedToken = localStorage.getItem('drive_access_token');
+            if (savedToken && typeof gapi !== 'undefined' && gapi.client) {
+                accessToken = savedToken;
+                gapi.client.setToken({ access_token: accessToken });
+                syncWithGoogleDrive();
+            } else {
+                if (loginBtn) loginBtn.style.display = "block"; // Εμφανίζουμε το κουμπί αν δεν είμαστε συνδεδεμένοι
+            }
+        } catch (e) {
+            console.log("Google Drive integration suspended or offline mode active.");
+            if (loginBtn) loginBtn.style.display = "block";
         }
-    } catch (e) {
-        console.log("Offline mode active.");
-    }
-};
-
-// Όταν ο χρήστης πατάει το κουμπί, το παράθυρο θα ανοίξει 100% εγγυημένα
-loginBtn.addEventListener('click', () => {
-    if (tokenClient) {
-        tokenClient.requestAccessToken();
-    }
+    }, 1000);
 });
 
-// ☁️ ΜΗΧΑΝΙΣΜΟΣ ΑΥΤΟΜΑΤΟΥ ΣΥΓΧΡΟΝΙΣΜΟΥ
+// Όταν ο χρήστης πατάει το κουμπί
+if (loginBtn) {
+    loginBtn.addEventListener('click', () => {
+        if (tokenClient) {
+            tokenClient.requestAccessToken();
+        } else {
+            alert("⚠️ Το Google SDK δεν έχει φορτώσει ακόμα. Δοκίμασε ξανά σε 2 δευτερόλεπτα.");
+        }
+    });
+}
+
+// ☁️ ΜΗΧΑΝΙΣΜΟΣ ΣΥΓΧΡΟΝΙΣΜΟΥ
 async function syncWithGoogleDrive() {
-    if (!accessToken) return;
+    if (!accessToken || typeof gapi === 'undefined' || !gapi.client) return;
     try {
         let res = await gapi.client.drive.files.list({
             q: "name='quantum_budget_data.json'",
@@ -90,7 +103,7 @@ async function syncWithGoogleDrive() {
         let cloudData = null;
 
         if (files && files.length > 0) {
-            driveFileId = files[0].id; // Διόρθωση: files[0].id αντί για files.id
+            driveFileId = files[0].id; // Σωστό: files[0].id
             let fileContent = await gapi.client.drive.files.get({
                 fileId: driveFileId,
                 alt: 'media'
