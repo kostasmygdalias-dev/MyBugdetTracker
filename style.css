@@ -1,0 +1,248 @@
+body {
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: radial-gradient(circle at center, #0f0c1b, #05020a);
+    color: #00ffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px 0;
+}
+
+.container {
+    background: rgba(15, 12, 27, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 255, 255, 0.15);
+    padding: 25px;
+    border-radius: 28px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 255, 255, 0.05);
+    width: 420px;
+    box-sizing: border-box;
+}
+
+h1 {
+    font-size: 24px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.6);
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+h3 {
+    font-size: 13px;
+    color: #ff007f;
+    text-transform: uppercase;
+    text-align: left;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+}
+
+/* Πάνελ Dashboard & Φίλτρων */
+.dashboard-panel {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.time-filter {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 10px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    border: 1px solid rgba(0, 255, 255, 0.1);
+    font-size: 12px;
+}
+
+.time-filter select {
+    width: auto;
+    padding: 5px 8px;
+    background: #090614;
+    color: #fff;
+    border: 1px solid #00ffff;
+    border-radius: 6px;
+    margin-bottom: 0;
+}
+
+/* Πλέγμα Στατιστικών */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.stat-box {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 10px 5px;
+    border-radius: 12px;
+    font-size: 10px;
+    color: #8a8a9e;
+    text-transform: uppercase;
+}
+
+.stat-box div {
+    font-size: 15px;
+    font-weight: bold;
+    margin-top: 4px;
+}
+
+.income-glow div { color: #00ff88; text-shadow: 0 0 10px rgba(0,255,136,0.3); }
+.expense-glow div { color: #ff0055; text-shadow: 0 0 10px rgba(255,0,85,0.3); }
+.net-glow div { text-shadow: 0 0 10px rgba(0,255,255,0.3); }
+
+.analytics-box {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: left;
+}
+
+/* Πάνελ Καταγραφής */
+.record-panel {
+    background: rgba(255, 255, 255, 0.01);
+    border: 1px solid rgba(0, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.quick-tags-container {
+    text-align: left;
+    margin-bottom: 15px;
+    max-height: 120px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.tag-group {
+    margin-bottom: 8px;
+}
+
+.group-label {
+    font-size: 9px;
+    color: #8a8a9e;
+    display: block;
+    margin-bottom: 2px;
+    font-weight: bold;
+}
+
+.tag-btn {
+    display: inline-block;
+    padding: 4px 10px;
+    margin: 2px 1px;
+    font-size: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #e0e0ff;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tag-btn:hover {
+    background: rgba(0, 255, 255, 0.15);
+    border-color: #00ffff;
+    color: #fff;
+}
+
+/* Σειρές Inputs */
+.inputs-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+input, select {
+    width: 100%;
+    padding: 11px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    border-radius: 10px;
+    color: #ffffff;
+    font-size: 13px;
+    box-sizing: border-box;
+    margin-bottom: 0;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: #ff007f;
+    box-shadow: 0 0 10px rgba(255, 0, 127, 0.2);
+}
+
+input[type="month"]::-webkit-calendar-picker-indicator {
+    filter: invert(1); /* Κάνει το εικονίδιο του ημερολογίου λευκό */
+    cursor: pointer;
+}
+
+button#addTransactionBtn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(45deg, #00ffff, #ff007f);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: 0.2s;
+}
+
+button#addTransactionBtn:hover {
+    box-shadow: 0 0 15px rgba(255, 0, 127, 0.4);
+    transform: translateY(-1px);
+}
+
+/* Λίστα */
+ul {
+    list-style-type: none;
+    padding: 0;
+    max-height: 150px;
+    overflow-y: auto;
+    margin: 0;
+}
+
+li {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 10px 15px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #e0e0ff;
+}
+
+.delete-btn {
+    background: rgba(255, 0, 85, 0.2);
+    border: 1px solid #ff0055;
+    color: #ff0055;
+    padding: 2px 7px;
+    font-size: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.delete-btn:hover {
+    background: #ff0055;
+    color: #fff;
+}
+
+/* Scrollbar Style */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0, 255, 255, 0.2); border-radius: 10px; }

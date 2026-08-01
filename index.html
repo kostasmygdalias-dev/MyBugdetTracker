@@ -2,27 +2,118 @@
 <html lang="el">
 <head>
     <meta charset="UTF-8">
-    <title>Παρακολούθηση Εξόδων</title>
+    <title>Quantum Ledger AI - 2100</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <h1>Οικονομικός Βοηθός</h1>
-    
-    <!-- Εδώ εμφανίζεται το σύνολο -->
-    <h2>Συνολικά Έξοδα: <span id="totalDisplay">0</span>€</h2>
+    <div class="container">
+        <h1>Quantum Ledger AI</h1>
+        
+        <!-- ΚΕΝΤΡΙΚΟ DASHBOARD -->
+        <div class="dashboard-panel">
+            <div class="time-filter">
+                <label for="viewYear">🧬 Έτος: </label>
+                <select id="viewYear">
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                </select>
+                <label for="viewMonth">🗓️ Μήνας: </label>
+                <select id="viewMonth">
+                    <option value="all">Όλο το Έτος</option>
+                    <option value="0">Ιανουάριος</option>
+                    <option value="1">Φεβρουάριος</option>
+                    <option value="2">Μάρτιος</option>
+                    <option value="3">Απρίλιος</option>
+                    <option value="4">Μάιος</option>
+                    <option value="5">Ιούνιος</option>
+                    <option value="6">Ιούλιος</option>
+                    <option value="7">Αύγουστος</option>
+                    <option value="8">Σεπτέμβριος</option>
+                    <option value="9">Οκτώβριος</option>
+                    <option value="10">Νοέμβριος</option>
+                    <option value="11">Δεκέμβριος</option>
+                </select>
+            </div>
 
-    <!-- Φόρμα για εισαγωγή εξόδου -->
-    <div>
-        <input type="text" id="expenseName" placeholder="Τι πληρώσατε; (π.χ. Καφέ)">
-        <input type="number" id="expenseAmount" placeholder="Ποσό σε €">
-        <button id="addExpenseBtn">Προσθήκη Εξόδου</button>
+            <div class="stats-grid">
+                <div class="stat-box income-glow">
+                    <small>Έσοδα</small>
+                    <div id="totalIncomeDisplay">0€</div>
+                </div>
+                <div class="stat-box expense-glow">
+                    <small>Έξοδα</small>
+                    <div id="totalExpenseDisplay">0€</div>
+                </div>
+                <div class="stat-box net-glow">
+                    <small>Καθαρό</small>
+                    <div id="netProfitDisplay">0€</div>
+                </div>
+            </div>
+
+            <div class="analytics-box">
+                <div id="analyticsContent">Ορίστε φίλτρα για ανάλυση...</div>
+            </div>
+        </div>
+
+        <!-- ΠΑΝΕΛ ΠΑΓΙΩΝ / ΕΠΑΝΑΛΑΜΒΑΝΟΜΕΝΩΝ ΣΥΝΑΛΛΑΓΩΝ -->
+        <div class="section recurring-panel">
+            <h3>🤖 Αυτοματοποιημένα Πάγια (Subscriptions)</h3>
+            <div class="recurring-inputs">
+                <input type="text" id="recurName" placeholder="Όνομα παγίου (π.χ. Ενοίκιο)">
+                <input type="number" id="recurAmount" placeholder="Ποσό (€)">
+                <select id="recurType">
+                    <option value="expense-bills">🏠 Πάγιο Έξοδο</option>
+                    <option value="income">💰 Πάγιο Έσοδο</option>
+                </select>
+                <button id="addRecurringBtn">➕ Ορισμός</button>
+            </div>
+            <ul id="recurringList" class="compact-list"></ul>
+        </div>
+
+        <!-- ΦΟΡΜΑ ΚΑΤΑΓΡΑΦΗΣ -->
+        <div class="section record-panel">
+            <h3>Κβαντική Καταγραφή (Μεμονωμένα)</h3>
+            
+            <div class="quick-tags-container">
+                <div class="tag-group">
+                    <span class="group-label">➕ ΕΣΟΔΑ:</span>
+                    <button class="tag-btn" data-name="Μισθός" data-category="income">💰 Μισθός</button>
+                    <button class="tag-btn" data-name="Extra Έσοδο" data-category="income">⚡ Extra</button>
+                </div>
+                <div class="tag-group">
+                    <span class="group-label">➖ ΕΞΟΔΑ:</span>
+                    <button class="tag-btn" data-name="Super Market" data-category="expense-food">🛒 Super Market</button>
+                    <button class="tag-btn" data-name="Καφές" data-category="expense-food">☕ Καφές</button>
+                    <button class="tag-btn" data-name="Delivery" data-category="expense-food">🍔 Delivery</button>
+                    <button class="tag-btn" data-name="Βενζίνη" data-category="expense-other">🚗 Μετακίνηση</button>
+                    <button class="tag-btn" data-name="Έξοδος" data-category="expense-fun">🎉 Διασκέδαση</button>
+                </div>
+            </div>
+
+            <div class="inputs-row">
+                <input type="text" id="transName" placeholder="Όνομα ή tag">
+                <input type="number" id="transAmount" placeholder="Ποσό (€)">
+            </div>
+            
+            <div class="inputs-row">
+                <input type="month" id="transMonthYear">
+                <select id="transType">
+                    <option value="income">💰 Έσοδο</option>
+                    <option value="expense-food">🛒 Φαγητό / Super Market</option>
+                    <option value="expense-bills">🏠 Λογαριασμοί / Ενοίκιο</option>
+                    <option value="expense-fun">🎉 Διασκέδαση / Ψώνια</option>
+                    <option value="expense-other">⚡ Άλλα / Διάφορα</option>
+                </select>
+            </div>
+            
+            <button id="addTransactionBtn">⚡ ΕΚΤΕΛΕΣΗ ΣΥΝΑΛΛΑΓΗΣ</button>
+        </div>
+
+        <h3>Ιστορικό Τροχιάς:</h3>
+        <ul id="transactionList"></ul>
     </div>
 
-    <!-- Η λίστα όπου θα φαίνονται όλα τα έξοδα -->
-    <h3>Ιστορικό Εξόδων:</h3>
-    <ul id="expenseList"></ul>
-
-    <!-- Σύνδεση με τη JavaScript -->
     <script src="app.js"></script>
 </body>
 </html>
