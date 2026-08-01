@@ -59,8 +59,23 @@
         <!-- ΠΑΝΕΛ ΠΑΓΙΩΝ / ΕΠΑΝΑΛΑΜΒΑΝΟΜΕΝΩΝ ΣΥΝΑΛΛΑΓΩΝ -->
         <div class="section recurring-panel">
             <h3>🤖 Αυτοματοποιημένα Πάγια (Subscriptions)</h3>
+            
+            <!-- Έτοιμα Quick Tags για Πάγια -->
+            <div class="quick-tags-container">
+                <div class="tag-group">
+                    <span class="group-label">⚙️ ΔΗΜΟΦΙΛΗ ΠΑΓΙΑ:</span>
+                    <button class="recur-tag-btn" data-name="Ενοίκιο" data-category="expense-bills">🏠 Ενοίκιο</button>
+                    <button class="recur-tag-btn" data-name="Κοινόχρηστα" data-category="expense-bills">🏢 Κοινόχρηστα</button>
+                    <button class="recur-tag-btn" data-name="Συνδρομές (Netflix/Spotify)" data-category="expense-other">📺 Συνδρομές</button>
+                    <button class="recur-tag-btn" data-name="Γυμναστήριο" data-category="expense-fun">🏋️ Γυμναστήριο</button>
+                    <button class="recur-tag-btn" data-name="Δάνειο / Δόση" data-category="expense-bills">💳 Δόση Δανείου</button>
+                    <button class="recur-tag-btn" data-name="Ασφάλεια" data-category="expense-other">🛡️ Ασφάλεια</button>
+                    <button class="recur-tag-btn" data-name="Μισθός (Πάγιο)" data-category="income">💰 Μισθός</button>
+                </div>
+            </div>
+
             <div class="recurring-inputs">
-                <input type="text" id="recurName" placeholder="Όνομα παγίου (π.χ. Ενοίκιο)">
+                <input type="text" id="recurName" placeholder="Όνομα παγίου ή επιλογή tag">
                 <input type="number" id="recurAmount" placeholder="Ποσό (€)">
                 <select id="recurType">
                     <option value="expense-bills">🏠 Πάγιο Έξοδο</option>

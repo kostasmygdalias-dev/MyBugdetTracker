@@ -2,11 +2,9 @@
 // ΜΕΡΟΣ 1: ΒΑΣΗ ΔΕΔΟΜΕΝΩΝ & ΔΙΑΧΕΙΡΙΣΗ ΠΑΓΙΩΝ
 // ==========================================
 
-// Φόρτωση δεδομένων από τη μνήμη του Browser (LocalStorage)
 let transactions = JSON.parse(localStorage.getItem('quantum_ledger')) || [];
 let recurringTemplates = JSON.parse(localStorage.getItem('quantum_recurring')) || [];
 
-// Σύνδεση με τα στοιχεία της HTML οθόνης
 const transName = document.getElementById('transName');
 const transAmount = document.getElementById('transAmount');
 const transMonthYear = document.getElementById('transMonthYear');
@@ -23,11 +21,9 @@ const recurringList = document.getElementById('recurringList');
 const viewYear = document.getElementById('viewYear');
 const viewMonth = document.getElementById('viewMonth');
 
-// Αυτόματος ορισμός του τρέχοντος Μήνα/Έτους στο πεδίο καταγραφής
 const now = new Date();
 transMonthYear.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-// Λειτουργία: Ορισμός Νέας Πάγιας Εντολής
 addRecurringBtn.addEventListener('click', () => {
     const name = recurName.value;
     const amount = Number(recurAmount.value);
@@ -50,7 +46,6 @@ addRecurringBtn.addEventListener('click', () => {
     updateDashboard();
 });
 
-// Λειτουργία: Προσθήκη Μεμονωμένης Συναλλαγής
 addTransactionBtn.addEventListener('click', () => {
     const name = transName.value;
     const amount = Number(transAmount.value);
@@ -62,7 +57,6 @@ addTransactionBtn.addEventListener('click', () => {
     const [yearPart, monthPart] = monthYearValue.split('-');
     const parsedMonthIndex = (parseInt(monthPart) - 1).toString();
 
-    // Αποθήκευση ως SNAPSHOT (κλειδωμένη εγγραφή ιστορικού)
     const newTransaction = {
         id: Date.now(),
         name: name,
@@ -84,7 +78,6 @@ addTransactionBtn.addEventListener('click', () => {
 viewYear.addEventListener('change', updateDashboard);
 viewMonth.addEventListener('change', updateDashboard);
 
-// Λειτουργία: Διαγραφή Πάγιας Εντολής (Για το μέλλον)
 window.deleteRecurring = function(id) {
     if(confirm("Κατάργηση αυτής της πάγιας εντολής για το μέλλον;")) {
         recurringTemplates = recurringTemplates.filter(r => r.id !== id);
@@ -93,7 +86,6 @@ window.deleteRecurring = function(id) {
     }
 };
 
-// Λειτουργία: Αλλαγή Τιμής Πάγιου Εξόδου (Προστατεύει το παρελθόν)
 window.editRecurringPrice = function(id) {
     const newPrice = Number(prompt("Εισάγετε τη νέα τιμή για αυτή την πάγια εντολή (Δεν επηρεάζει το παρελθόν):"));
     if (isNaN(newPrice) || newPrice <= 0) return alert("Μη έγκυρη τιμή!");
@@ -107,7 +99,6 @@ window.editRecurringPrice = function(id) {
     updateDashboard();
 };
 
-// Λειτουργία: Διαγραφή Απλής Συναλλαγής από το Ιστορικό
 window.deleteTransaction = function(id) {
     if(confirm("Διαγραφή συναλλαγής;")) {
         transactions = transactions.filter(t => t.id !== id);
@@ -253,12 +244,21 @@ function updateDashboard() {
     document.getElementById('analyticsContent').innerHTML = analyticsHTML;
 }
 
-// Λειτουργία για την αυτόματη συμπλήρωση μέσω των Quick Tags
+// Λειτουργία για την αυτόματη συμπλήρωση μέσω των Quick Tags (Μεμονωμένα)
 document.querySelectorAll('.tag-btn').forEach(button => {
     button.addEventListener('click', (e) => {
         transName.value = e.target.getAttribute('data-name');
         transType.value = e.target.getAttribute('data-category');
-        transAmount.focus(); // Στέλνει τον κέρσορα κατευθείαν στο ποσό
+        transAmount.focus();
+    });
+});
+
+// Λειτουργία για την αυτόματη συμπλήρωση μέσω των Quick Tags (Πάγια)
+document.querySelectorAll('.recur-tag-btn').forEach(button => {
+    button.addEventListener('click', (e) => {
+        recurName.value = e.target.getAttribute('data-name');
+        recurType.value = e.target.getAttribute('data-category');
+        recurAmount.focus(); // Στέλνει τον κέρσορα κατευθείαν στο ποσό του παγίου
     });
 });
 
