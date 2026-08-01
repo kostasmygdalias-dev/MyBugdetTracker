@@ -4,21 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quantum Ledger AI - 2100</title>
-    
-    <!-- Πρώτο το τοπικό αρχείο της βάσης -->
-    <script src="supabase-local.js"></script>
-    
     <link rel="stylesheet" href="style.css">
-</head>
-
 </head>
 <body>
 
     <div class="container">
         <h1>Quantum Ledger AI</h1>
         
-        <!-- ΚΟΥΜΠΙ ΥΒΡΙΔΙΚΟΥ ΣΥΓΧΡΟΝΙΣΜΟΥ -->
-        <button id="syncBtn" style="background: linear-gradient(45deg, #00ffff, #00ff88); color:#000; margin-bottom:15px; padding:10px;">☁️ ΣΥΓΧΡΟΝΙΣΜΟΣ ΜΕ CLOUD</button>
+        <!-- ΚΟΥΜΠΙΑ BACKUP (ΑΝΤΙ ΓΙΑ ΣΥΓΧΡΟΝΙΣΜΟ CLOUD) -->
+        <div class="inputs-row" style="margin-bottom: 15px;">
+            <button id="exportBtn" style="background: #00ff88; color: #000; font-size: 11px; padding: 8px;">📥 Εξαγωγή Αρχείου</button>
+            <button id="importBtn" style="background: #00ffff; color: #000; font-size: 11px; padding: 8px;">📤 Φόρτωση Αρχείου</button>
+            <input type="file" id="fileInput" style="display: none;" accept=".json">
+        </div>
         
         <!-- ΚΕΝΤΡΙΚΟ DASHBOARD -->
         <div class="dashboard-panel">
@@ -62,21 +60,19 @@
             </div>
 
             <div class="analytics-box">
-                <div id="analyticsContent">Ορίστε φίλτρα για ανάλυση...</div>
+                <div id="analyticsContent">Ορίστε φίλτρα...</div>
             </div>
         </div>
 
-        <!-- ΠΑΝΕΛ ΠΑΓΙΩΝ / ΕΠΑΝΑΛΑΜΒΑΝΟΜΕΝΩΝ ΣΥΝΑΛΛΑΓΩΝ -->
+        <!-- ΠΑΝΕΛ ΠΑΓΙΩΝ -->
         <div class="section recurring-panel">
-            <h3>🤖 Αυτοματοποιημένα Πάγια (Subscriptions)</h3>
+            <h3>🤖 Αυτοματοποιημένα Πάγια</h3>
             
             <div class="quick-tags-container">
                 <div class="tag-group">
-                    <span class="group-label">⚙️ ΔΗΜΟΦΙΛΗ ΠΑΓΙΑ:</span>
                     <button class="recur-tag-btn" data-name="Ενοίκιο" data-category="expense-bills">🏠 Ενοίκιο</button>
                     <button class="recur-tag-btn" data-name="Κοινόχρηστα" data-category="expense-bills">🏢 Κοινόχρηστα</button>
-                    <button class="recur-tag-btn" data-name="Συνδρομές (Netflix/Spotify)" data-category="expense-other">📺 Συνδρομές</button>
-                    <button class="recur-tag-btn" data-name="Γυμναστήριο" data-category="expense-fun">🏋️ Γυμναστήριο</button>
+                    <button class="recur-tag-btn" data-name="Συνδρομές" data-category="expense-other">📺 Συνδρομές</button>
                     <button class="recur-tag-btn" data-name="Μισθός (Πάγιο)" data-category="income">💰 Μισθός</button>
                 </div>
             </div>
@@ -88,28 +84,22 @@
                     <option value="expense-bills">🏠 Πάγιο Έξοδο</option>
                     <option value="income">💰 Πάγιο Έσοδο</option>
                 </select>
-                <button id="addRecurringBtn">➕ Ορισμός</button>
+                <button id="addRecurringBtn">➕</button>
             </div>
             <ul id="recurringList" class="compact-list"></ul>
         </div>
 
         <!-- ΦΟΡΜΑ ΚΑΤΑΓΡΑΦΗΣ -->
         <div class="section record-panel">
-            <h3>Κβαντική Καταγραφή (Μεμονωμένα)</h3>
+            <h3>Κβαντική Καταγραφή</h3>
             
             <div class="quick-tags-container">
                 <div class="tag-group">
-                    <span class="group-label">➕ ΕΣΟΔΑ:</span>
                     <button class="tag-btn" data-name="Μισθός" data-category="income">💰 Μισθός</button>
-                    <button class="tag-btn" data-name="Extra Έσοδο" data-category="income">⚡ Extra</button>
-                </div>
-                <div class="tag-group">
-                    <span class="group-label">➖ ΕΞΟΔΑ:</span>
                     <button class="tag-btn" data-name="Super Market" data-category="expense-food">🛒 Super Market</button>
                     <button class="tag-btn" data-name="Καφές" data-category="expense-food">☕ Καφές</button>
                     <button class="tag-btn" data-name="Delivery" data-category="expense-food">🍔 Delivery</button>
                     <button class="tag-btn" data-name="Βενζίνη" data-category="expense-other">🚗 Μετακίνηση</button>
-                    <button class="tag-btn" data-name="Έξοδος" data-category="expense-fun">🎉 Διασκέδαση</button>
                 </div>
             </div>
 

@@ -1,52 +1,34 @@
-
 // ==========================================
-// ΜΕΡΟΣ 1: ΤΟΠΙΚΗ ΔΙΑΧΕΙΡΙΣΗ & ΣΥΓΧΡΟΝΙΣΜΟΣ CLOUD
-// ==========================================
-
-// Κλειδωμένα και σωστά συμπληρωμένα τα δικά σου στοιχεία Supabase
-const SUPABASE_URL = "https://uyapnscadjnsdivmxeqt.supabase.co";
-// ==========================================
-// ΜΕΡΟΣ 1: ΤΟΠΙΚΗ ΔΙΑΧΕΙΡΙΣΗ & ΣΥΓΧΡΟΝΙΣΜΟΣ CLUID
+// ΜΕΡΟΣ 1: ΔΕΔΟΜΕΝΑ, GOOGLE DRIVE API & AUTH
 // ==========================================
 
+// ⚠️ ΒΑΛΕ ΕΔΩ ΤΟ ΔΙΚΟ ΣΟΥ CLIENT ID ΑΠΟ ΤΟ GOOGLE CLOUD CONSOLE
+const CLIENT_ID = "://googleusercontent.com";
+const SCOPES = "https://googleapis.com";
 
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YXBuc2NhZGpuc2Rpdm14ZXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2MDI0MzksImV4cCI6MjEwMTE3ODQzOX0.idM0d0LaAnYOhoOWurNRGh_G7rRR1EZBsmPHnzTpLJE";
+let tokenClient;
+let accessToken = null;
+let driveFileId = null;
 
-let supabaseCloud = null;
-
-// ✨ Η ΑΠΟΛΥΤΗ ΔΙΟΡΘΩΣΗ: Έλεγχος για κάθε πιθανό όνομα της τοπικής βιβλιοθήκης
-try {
-    if (typeof supabase !== 'undefined') {
-        supabaseCloud = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    } else if (typeof window.supabase !== 'undefined') {
-        supabaseCloud = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    } else if (typeof supabaseJs !== 'undefined') {
-        supabaseCloud = supabaseJs.createClient(SUPABASE_URL, SUPABASE_KEY);
-    }
-} catch (e) {
-    console.log("Supabase initialization failed. Running in safe local mode.");
-}
-
-// Τα δεδομένα τρέχουν ΑΚΑΡΙΑΙΑ από την τοπική μνήμη
+// Τα δεδομένα τρέχουν ΑΚΑΡΙΑΙΑ από την τοπική μνήμη για να μην κολλάει ποτέ το App
 let transactions = JSON.parse(localStorage.getItem('quantum_ledger')) || [];
 let recurringTemplates = JSON.parse(localStorage.getItem('quantum_recurring')) || [];
 
+// HTML Στοιχεία
 const transName = document.getElementById('transName');
 const transAmount = document.getElementById('transAmount');
 const transMonthYear = document.getElementById('transMonthYear');
 const transType = document.getElementById('transType');
 const addTransactionBtn = document.getElementById('addTransactionBtn');
 const transactionList = document.getElementById('transactionList');
-
 const recurName = document.getElementById('recurName');
 const recurAmount = document.getElementById('recurAmount');
 const recurType = document.getElementById('recurType');
 const addRecurringBtn = document.getElementById('addRecurringBtn');
 const recurringList = document.getElementById('recurringList');
-
 const viewYear = document.getElementById('viewYear');
 const viewMonth = document.getElementById('viewMonth');
-const syncBtn = document.getElementById('syncBtn');
+const loginBtn = document.getElementById('loginBtn');
 
 const now = new Date();
 transMonthYear.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -56,61 +38,110 @@ function saveToLocalStorage() {
     localStorage.setItem('quantum_recurring', JSON.stringify(recurringTemplates));
 }
 
-// Λειτουργία: Αυτόματο Κατέβασμα από το Cloud κατά την εκκίνηση
-async function downloadFromCloud() {
-    if (!supabaseCloud) return;
+// 🔐 ΑΡΧΙΚΟΠΟΙΗΣΗ GOOGLE SIGN-IN
+window.onload = function () {
     try {
-        const [ledgerRes, recurRes] = await Promise.all([
-            supabaseCloud.from('quantum_ledger').select('*'),
-            supabaseCloud.from('quantum_recurring').select('*')
-        ]);
+        gapi.load('client', async () => {
+            await gapi.client.init({ discoveryDocs: ["https://googleapis.com"] });
+        });
+        tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID,
+            scope: SCOPES,
+            callback: async (resp) => {
+                if (resp.error) return;
+                accessToken = resp.access_token;
+                loginBtn.textContent = "🔄 ΣΥΓΧΡΟΝΙΣΜΟΣ ΕΝΕΡΓΟΣ (DRIVE)";
+                loginBtn.style.background = "linear-gradient(45deg, #00ff88, #00ffff)";
+                loginBtn.style.color = "#000";
+                await syncWithGoogleDrive();
+            },
+        });
+    } catch (e) {
+        console.log("Google SDK load error or offline mode.");
+    }
+};
 
-        if (!ledgerRes.error) transactions = ledgerRes.data || [];
-        if (!recurRes.error) recurringTemplates = recurRes.data || [];
+loginBtn.addEventListener('click', () => {
+    if (tokenClient) tokenClient.requestAccessToken({ prompt: 'consent' });
+});
+
+// ☁️ ΜΗΧΑΝΙΣΜΟΣ ΑΥΤΟΜΑΤΟΥ ΣΥΓΧΡΟΝΙΣΜΟΥ ΜΕ GOOGLE DRIVE
+async function syncWithGoogleDrive() {
+    if (!accessToken) return;
+    try {
+        // 1. Ψάχνουμε αν υπάρχει ήδη το αρχείο μας στο κρυφό AppData του Drive
+        let res = await gapi.client.drive.files.list({
+            q: "name='quantum_budget_data.json'",
+            spaces: 'appDataFolder',
+            fields: 'files(id)'
+        });
+        
+        let files = res.result.files;
+        let cloudData = null;
+
+        if (files && files.length > 0) {
+            driveFileId = files[0].id;
+            // Κατεβάζουμε τα δεδομένα από το Cloud
+            let fileContent = await gapi.client.drive.files.get({
+                fileId: driveFileId,
+                alt: 'media'
+            });
+            cloudData = fileContent.result;
+        }
+
+        if (cloudData) {
+            // Ένωση δεδομένων: Κρατάμε τα πιο πρόσφατα ή αν το τοπικό είναι άδειο, παίρνουμε του Cloud
+            if (transactions.length === 0 && cloudData.transactions) transactions = cloudData.transactions;
+            if (recurringTemplates.length === 0 && cloudData.recurring) recurringTemplates = cloudData.recurring;
+        }
+
+        // 2. Ανεβάζουμε τα τελικά δεδομένα πίσω στο Drive για να είναι ολόκληρα
+        const boundary = 'foo_bar_baz';
+        const delimiter = "\r\n--" + boundary + "\r\n";
+        const close_delim = "\r\n--" + boundary + "--";
+        
+        const metadata = {
+            'name': 'quantum_budget_data.json',
+            'parents': ['appDataFolder']
+        };
+        const data = { transactions, recurring: recurringTemplates };
+
+        const multipartRequestBody =
+            delimiter + 'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+            JSON.stringify(metadata) + delimiter +
+            'Content-Type: application/json\r\n\r\n' +
+            JSON.stringify(data) + close_delim;
+
+        if (driveFileId) {
+            // Ενημέρωση υπάρχοντος αρχείου
+            await gapi.client.request({
+                'path': '/upload/drive/v3/files/' + driveFileId,
+                'method': 'PATCH',
+                'params': {'uploadType': 'multipart'},
+                'headers': {'Content-Type': 'multipart/related; boundary="' + boundary + '"'},
+                'body': multipartRequestBody
+            });
+        } else {
+            // Δημιουργία νέου αρχείου
+            let createRes = await gapi.client.request({
+                'path': '/upload/drive/v3/files',
+                'method': 'POST',
+                'params': {'uploadType': 'multipart'},
+                'headers': {'Content-Type': 'multipart/related; boundary="' + boundary + '"'},
+                'body': multipartRequestBody
+            });
+            driveFileId = createRes.result.id;
+        }
 
         saveToLocalStorage();
         updateDashboard();
     } catch (e) {
-        console.log("Error auto-loading from cloud");
+        console.error("Drive sync failed", e);
     }
 }
 
-// Χειροκίνητο κουμπί Συγχρονισμού
-syncBtn.addEventListener('click', async () => {
-    if (!supabaseCloud) {
-        return alert("❌ Δεν υπάρχει σύνδεση με το Cloud αυτή τη στιγμή (Η βιβλιοθήκη Supabase είναι μπλοκαρισμένη από το δίκτυο).");
-    }
-
-    syncBtn.textContent = "⏳ ΣΥΓΧΡΟΝΙΣΜΟΣ...";
-    syncBtn.style.opacity = "0.6";
-
-    try {
-        await supabaseCloud.from('quantum_ledger').delete().neq('id', 0);
-        if (transactions.length > 0) {
-            const cleanTransactions = transactions.filter(t => !t.isAuto).map(t => ({
-                name: t.name, amount: t.amount, year: t.year, month: t.month, type: t.type
-            }));
-            await supabaseCloud.from('quantum_ledger').insert(cleanTransactions);
-        }
-
-        await supabaseCloud.from('quantum_recurring').delete().neq('id', 0);
-        if (recurringTemplates.length > 0) {
-            const cleanRecur = recurringTemplates.map(r => ({ name: r.name, amount: r.amount, type: r.type }));
-            await supabaseCloud.from('quantum_recurring').insert(cleanRecur);
-        }
-
-        await downloadFromCloud();
-        alert("✅ Ο συγχρονισμός ολοκληρώθηκε με επιτυχία!");
-    } catch (e) {
-        alert("❌ Σφάλμα δικτύου κατά το συγχρονισμό.");
-    }
-
-    syncBtn.textContent = "☁️ ΣΥΓΧΡΟΝΙΣΜΟΣ ΜΕ CLOUD";
-    syncBtn.style.opacity = "1";
-});
-
-// Προσθήκη Πάγιας Εντολής (Τοπικά)
-addRecurringBtn.addEventListener('click', () => {
+// Προσθήκη Πάγιας Εντολής (Τοπικά - Ακαριαία)
+addRecurringBtn.addEventListener('click', async () => {
     const name = recurName.value;
     const amount = Number(recurAmount.value);
     const type = recurType.value;
@@ -121,10 +152,11 @@ addRecurringBtn.addEventListener('click', () => {
     recurName.value = "";
     recurAmount.value = "";
     updateDashboard();
+    if (accessToken) await syncWithGoogleDrive(); // Συγχρονισμός στο παρασκήνιο
 });
 
-// Προσθήκη Συναλλαγής (Τοπικά)
-addTransactionBtn.addEventListener('click', () => {
+// Προσθήκη Συναλλαγής (Τοπικά - Ακαριαία)
+addTransactionBtn.addEventListener('click', async () => {
     const name = transName.value;
     const amount = Number(transAmount.value);
     const monthYearValue = transMonthYear.value;
@@ -139,35 +171,38 @@ addTransactionBtn.addEventListener('click', () => {
     transName.value = "";
     transAmount.value = "";
     updateDashboard();
+    if (accessToken) await syncWithGoogleDrive(); // Συγχρονισμός στο παρασκήνιο
 });
 
 viewYear.addEventListener('change', updateDashboard);
 viewMonth.addEventListener('change', updateDashboard);
 
-window.deleteRecurring = function(id) {
+window.deleteRecurring = async function(id) {
     if(confirm("Κατάργηση αυτής της πάγιας εντολής;")) {
         recurringTemplates = recurringTemplates.filter(r => r.id !== id);
         saveToLocalStorage();
         updateDashboard();
+        if (accessToken) await syncWithGoogleDrive();
     }
 };
 
-window.editRecurringPrice = function(id) {
+window.editRecurringPrice = async function(id) {
     const newPrice = Number(prompt("Εισάγετε τη νέα τιμή:"));
     if (isNaN(newPrice) || newPrice <= 0) return alert("Μη έγκυρη τιμή!");
     recurringTemplates = recurringTemplates.map(r => r.id === id ? {...r, amount: newPrice} : r);
     saveToLocalStorage();
     updateDashboard();
+    if (accessToken) await syncWithGoogleDrive();
 };
 
-window.deleteTransaction = function(id) {
+window.deleteTransaction = async function(id) {
     if(confirm("Διαγραφή συναλλαγής;")) {
         transactions = transactions.filter(t => t.id !== id);
         saveToLocalStorage();
         updateDashboard();
+        if (accessToken) await syncWithGoogleDrive();
     }
 };
-
 // ==========================================
 // ΜΕΡΟΣ 2: ΜΗΧΑΝΗ ΥΠΟΛΟΓΙΣΜΩΝ & ΕΜΦΑΝΙΣΗ (UI)
 // ==========================================
@@ -324,6 +359,5 @@ document.querySelectorAll('.recur-tag-btn').forEach(button => {
     });
 });
 
-// Εκκίνηση της οθόνης τοπικά και αυτόματο κατέβασμα των αλλαγών από το Cloud
+// Αρχική σχεδίαση με βάση ό,τι υπάρχει ήδη αποθηκευμένο τοπικά
 updateDashboard();
-downloadFromCloud();
