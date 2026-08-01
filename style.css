@@ -152,27 +152,35 @@ h3 {
 
 .inputs-row { display: flex; gap: 8px; margin-bottom: 8px; }
 
-/* 🌌 ΦΟΥΤΟΥΡΙΣΤΙΚΑ ΣΚΟΥΡΑ INPUTS (ΚΑΙ ΓΙΑ ΤΟ MONTH) */
-input, select, input[type="month"] {
+/* 🌌 ΝΕΑ ΔΙΟΡΘΩΜΕΝΑ INPUTS: ΠΕΝΤΑΚΑΘΑΡΑ ΚΑΙ ΣΚΟΥΡΑ */
+input, select {
     width: 100%;
     padding: 12px;
-    background: #090614 !important; /* Τελείως μαύρο/σκοτεινό φόντο */
-    border: 1px solid rgba(0, 255, 255, 0.3);
+    background: #120f24; /* Σκοτεινό μπλε/μαύρο */
+    border: 1px solid #00ffff; /* Έντονο Neon Cyan περίγραμμα */
     border-radius: 10px;
-    color: #ffffff !important; /* Λευκά γράμματα */
+    color: #ffffff; /* Ολόλευκα γράμματα */
     font-size: 14px;
     box-sizing: border-box;
     margin-bottom: 0;
 }
 
-input:focus, select:focus, input[type="month"]:focus { 
-    border-color: #ff007f; 
-    box-shadow: 0 0 10px rgba(255, 0, 127, 0.3);
+/* Ειδικός, συμβατός κανόνας για το πεδίο του Μήνα */
+input[type="month"] {
+    background-color: #120f24;
+    border: 1px solid #00ffff;
+    color: #ffffff;
+    padding: 11px;
 }
 
-/* ⚡ ΔΙΟΡΘΩΣΗ ΓΙΑ ΤΟ ΕΙΚΟΝΙΔΙΟ ΤΟΥ ΜΗΝΑ (WEBKIT) */
+input:focus, select:focus { 
+    border-color: #ff007f; 
+    box-shadow: 0 0 10px rgba(255, 0, 127, 0.4);
+}
+
+/* Κάνει το εικονίδιο του ημερολογίου λευκό/cyan για να φαίνεται */
 input[type="month"]::-webkit-calendar-picker-indicator {
-    filter: invert(1) sepia(1) saturate(5) hue-rotate(140deg); /* Κάνει το εικονίδιο Neon Cyan */
+    filter: invert(1);
     cursor: pointer;
 }
 
