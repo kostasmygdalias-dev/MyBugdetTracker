@@ -1,7 +1,8 @@
 // ==========================================
-// ΜΕΡΟΣ 1: ΚΑΘΑΡΗ ΤΟΠΙΚΗ ΔΙΑΧΕΙΡΙΣΗ (LOCAL)
+// ΜΕΡΟΣ 1: ΔΕΔΟΜΕΝΑ & ΒΑΣΙΚΕΣ ΣΥΝΑΡΤΗΣΕΙΣ ΚΑΤΑΓΡΑΦΗΣ
 // ==========================================
 
+// Φόρτωση δεδομένων ακαριαία από την τοπική μνήμη
 let transactions = JSON.parse(localStorage.getItem('quantum_ledger')) || [];
 let recurringTemplates = JSON.parse(localStorage.getItem('quantum_recurring')) || [];
 
@@ -11,14 +12,17 @@ const transMonthYear = document.getElementById('transMonthYear');
 const transType = document.getElementById('transType');
 const addTransactionBtn = document.getElementById('addTransactionBtn');
 const transactionList = document.getElementById('transactionList');
+
 const recurName = document.getElementById('recurName');
 const recurAmount = document.getElementById('recurAmount');
 const recurType = document.getElementById('recurType');
 const addRecurringBtn = document.getElementById('addRecurringBtn');
 const recurringList = document.getElementById('recurringList');
+
 const viewYear = document.getElementById('viewYear');
 const viewMonth = document.getElementById('viewMonth');
 
+// Αυτόματος ορισμός τρέχοντος μήνα
 const now = new Date();
 transMonthYear.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
@@ -27,7 +31,7 @@ function saveToLocalStorage() {
     localStorage.setItem('quantum_recurring', JSON.stringify(recurringTemplates));
 }
 
-// Προσθήκη Πάγιας Εντολής
+// Προσθήκη Πάγιας Εντολής (Τοπικά)
 addRecurringBtn.addEventListener('click', () => {
     const name = recurName.value;
     const amount = Number(recurAmount.value);
@@ -41,7 +45,7 @@ addRecurringBtn.addEventListener('click', () => {
     updateDashboard();
 });
 
-// Προσθήκη Συναλλαγής
+// Προσθήκη Συναλλαγής (Τοπικά)
 addTransactionBtn.addEventListener('click', () => {
     const name = transName.value;
     const amount = Number(transAmount.value);
