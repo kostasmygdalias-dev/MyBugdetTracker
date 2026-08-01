@@ -1,16 +1,16 @@
 // ==========================================
-// ΜΕΡΟΣ 1: ΣΥΝΔΕΣΗ ΜΕ ΤΗΝ ONLINE ΒΑΣΗ (SUPABASE) & ΕΓΓΡΑΦΕΣ
+// ΜΕΡΟΣ 1: ΣΥΝΔΕΣΗ ΜΕ SUPABASE & ΥΠΕΡ-ΤΑΧΕΙΑ ΦΟΡΤΩΣΗ
 // ==========================================
 
-// ΑΝΤΙΚΑΤΑΣΤΗΣΕ ΑΥΤΑ ΤΑ ΔΥΟ ΜΕ ΤΑ ΔΙΚΑ ΣΟΥ ΣΤΟΙΧΕΙΑ ΑΠΟ ΤΟ SUPABASE: SETTINGS -> API
+// ΑΝΤΙΚΑΤΑΣΤΗΣΕ ΜΕ ΤΑ ΔΙΚΑ ΣΟΥ ΣΤΟΙΧΕΙΑ ΑΠΟ ΤΟ SUPABASE: SETTINGS -> API
 const SUPABASE_URL = "https://uyapnscadjnsdivmxeqt.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5YXBuc2NhZGpuc2Rpdm14ZXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2MDI0MzksImV4cCI6MjEwMTE3ODQzOX0.idM0d0LaAnYOhoOWurNRGh_G7rRR1EZBsmPHnzTpLJE";
 
-// Δημιουργία σύνδεσης με τη βάση
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let transactions = [];
-let recurringTemplates = [];
+// Φορτώνουμε ΑΜΕΣΩΣ τα παλιά δεδομένα από το cache για να μην βλέπεις λευκή οθόνη
+let transactions = JSON.parse(localStorage.getItem('quantum_ledger_cache')) || [];
+let recurringTemplates = JSON.parse(localStorage.getItem('quantum_recurring_cache')) || [];
 
 // Σύνδεση με HTML στοιχεία
 const transName = document.getElementById('transName');
@@ -29,20 +29,31 @@ const recurringList = document.getElementById('recurringList');
 const viewYear = document.getElementById('viewYear');
 const viewMonth = document.getElementById('viewMonth');
 
-// Αυτόματος ορισμός τρέχοντος μήνα
 const now = new Date();
 transMonthYear.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-// Φόρτωση δεδομένων από το Cloud κατά την εκκίνηση
+// ⚡ ΠΡΟΗΓΜΕΝΗ ΦΟΡΤΩΣΗ: Παράλληλη και με Cache για άμεσο άνοιγμα
 async function loadDataFromCloud() {
-    // 1. Τραβάμε τις κανονικές συναλλαγές
-    const { data: ledgerData, error: err1 } = await supabase.from('quantum_ledger').select('*');
-    if (!err1) transactions = ledgerData || [];
+    try {
+        // Τραβάμε και τους δύο πίνακες ΤΑΥΤΟΧΡΟΝΑ για να γλυτώσουμε χρόνο
+        const [ledgerRes, recurRes] = await Promise.all([
+            supabase.from('quantum_ledger').select('*'),
+            supabase.from('quantum_recurring').select('*')
+        ]);
 
-    // 2. Τραβάμε τις πάγιες εντολές
-    const { data: recurData, error: err2 } = await supabase.from('quantum_recurring').select('*');
-    if (!err2) recurringTemplates = recurData || [];
+        if (!ledgerRes.error) {
+            transactions = ledgerRes.data || [];
+            localStorage.setItem('quantum_ledger_cache', JSON.stringify(transactions));
+        }
+        if (!recurRes.error) {
+            recurringTemplates = recurRes.data || [];
+            localStorage.setItem('quantum_recurring_cache', JSON.stringify(recurringTemplates));
+        }
+    } catch (e) {
+        console.log("Offline mode - Using cache data");
+    }
 
+    // Ανανέωση της οθόνης αμέσως
     updateDashboard();
 }
 
@@ -54,15 +65,15 @@ addRecurringBtn.addEventListener('click', async () => {
 
     if (name === "" || amount <= 0) return alert("Συμπληρώστε σωστά τα στοιχεία!");
 
+    // Αισιόδοξη ενημέρωση (Optimistic UI) για να φανεί αμέσως στην οθόνη χωρίς καθυστέρηση
+    recurringTemplates.push({ id: Date.now(), name, amount, type });
+    updateDashboard();
+
     const { error } = await supabase.from('quantum_recurring').insert([{ name, amount, type }]);
     
-    if (error) {
-        alert("Σφάλμα σύνδεσης με το Cloud!");
-    } else {
-        recurName.value = "";
-        recurAmount.value = "";
-        await loadDataFromCloud();
-    }
+    recurName.value = "";
+    recurAmount.value = "";
+    await loadDataFromCloud();
 });
 
 // Λειτουργία: Προσθήκη Μεμονωμένης Συναλλαγής στο Cloud
@@ -77,17 +88,17 @@ addTransactionBtn.addEventListener('click', async () => {
     const [yearPart, monthPart] = monthYearValue.split('-');
     const parsedMonthIndex = (parseInt(monthPart) - 1).toString();
 
-    const { error } = await supabase.from('quantum_ledger').insert([
+    // Εμφάνιση στην οθόνη ΑΜΕΣΩΣ, πριν καν απαντήσει το ίντερνετ
+    transactions.push({ id: Date.now(), name, amount, year: yearPart, month: parsedMonthIndex, type: typeValue });
+    updateDashboard();
+
+    await supabase.from('quantum_ledger').insert([
         { name, amount, year: yearPart, month: parsedMonthIndex, type: typeValue }
     ]);
     
-    if (error) {
-        alert("Σφάλμα κατά την αποθήκευση στο Cloud!");
-    } else {
-        transName.value = "";
-        transAmount.value = "";
-        await loadDataFromCloud();
-    }
+    transName.value = "";
+    transAmount.value = "";
+    await loadDataFromCloud();
 });
 
 viewYear.addEventListener('change', updateDashboard);
@@ -96,6 +107,8 @@ viewMonth.addEventListener('change', updateDashboard);
 // Λειτουργία: Διαγραφή Πάγιας Εντολής από το Cloud
 window.deleteRecurring = async function(id) {
     if(confirm("Κατάργηση αυτής της πάγιας εντολής;")) {
+        recurringTemplates = recurringTemplates.filter(r => r.id !== id);
+        updateDashboard();
         await supabase.from('quantum_recurring').delete().eq('id', id);
         await loadDataFromCloud();
     }
@@ -106,6 +119,9 @@ window.editRecurringPrice = async function(id) {
     const newPrice = Number(prompt("Εισάγετε τη νέα τιμή:"));
     if (isNaN(newPrice) || newPrice <= 0) return alert("Μη έγκυρη τιμή!");
 
+    recurringTemplates = recurringTemplates.map(r => r.id === id ? {...r, amount: newPrice} : r);
+    updateDashboard();
+
     await supabase.from('quantum_recurring').update({ amount: newPrice }).eq('id', id);
     await loadDataFromCloud();
 };
@@ -113,6 +129,8 @@ window.editRecurringPrice = async function(id) {
 // Λειτουργία: Διαγραφή Απλής Συναλλαγής από το Cloud
 window.deleteTransaction = async function(id) {
     if(confirm("Διαγραφή συναλλαγής;")) {
+        transactions = transactions.filter(t => t.id !== id);
+        updateDashboard();
         await supabase.from('quantum_ledger').delete().eq('id', id);
         await loadDataFromCloud();
     }
@@ -273,5 +291,6 @@ document.querySelectorAll('.recur-tag-btn').forEach(button => {
     });
 });
 
-// Εκκίνηση της οθόνης και αυτόματη φόρτωση από το Cloud
+// Εκκίνηση της οθόνης με άμεση σχεδίαση από Cache (Και ανανέωση στο παρασκήνιο)
+updateDashboard();
 loadDataFromCloud();
